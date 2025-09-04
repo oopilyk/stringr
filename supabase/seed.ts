@@ -162,6 +162,7 @@ async function seedData() {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: stringer.email,
         password: stringer.password,
+        email_confirm: true,
         user_metadata: { role: 'stringer' }
       })
 
@@ -204,6 +205,7 @@ async function seedData() {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: player.email,
         password: player.password,
+        email_confirm: true,
         user_metadata: { role: 'player' }
       })
 
