@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "react-native-web": "^0.20.0"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",

@@ -1,4 +1,3 @@
-import * as React from "react"
 import { cn, getStatusColor, formatStatusText } from "../lib/utils"
 import type { RequestStatus } from "@rally-strings/types"
 

@@ -1,19 +1,43 @@
 'use client'
 
-import { useUser, useSessionContext } from '@supabase/auth-helpers-react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { createClient } from '@/lib/supabase'
 import type { Profile } from '@rally-strings/types'
+import type { User } from '@supabase/supabase-js'
 
 export function useAuth() {
-  const user = useUser()
-  const { supabaseClient } = useSessionContext()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
-  const { data: profile, isLoading } = useQuery({
+  useEffect(() => {
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+      setLoading(false)
+    }
+
+    getInitialSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
+
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null
       
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -28,7 +52,7 @@ export function useAuth() {
   return {
     user,
     profile,
-    isLoading: isLoading && !!user,
+    isLoading: loading || (profileLoading && !!user),
     isAuthenticated: !!user,
   }
 }

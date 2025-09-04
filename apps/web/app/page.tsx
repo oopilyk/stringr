@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase-server'
 import { DiscoverPage } from '@/components/discover/discover-page'
 import { redirect } from 'next/navigation'
 
