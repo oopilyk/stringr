@@ -30,14 +30,16 @@ export function Navigation() {
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">RS</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">RallyStrings</span>
-            </Link>
-          </div>
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-lg overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="RallyStrings logo" 
+                className="w-full h-full object-cover" 
+              />
+            </div>
+            <span className="text-xl font-bold text-gray-900">Stringr</span>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
