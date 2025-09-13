@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Button } from '@rally-strings/ui'
-import { Home, MessageSquare, Calendar, Settings, LogOut, Menu, X } from 'lucide-react'
+import { Home, MessageSquare, Calendar, Settings, LogOut, Menu, X, UserPlus, User } from 'lucide-react'
 
 export function Navigation() {
   const { user, profile } = useAuth()
@@ -19,12 +19,29 @@ export function Navigation() {
     router.push('/auth/signin')
   }
 
-  const navigationItems = [
-    { href: '/', label: 'Discover', icon: Home },
-    { href: '/dashboard', label: 'Dashboard', icon: Calendar },
-    { href: '/messages', label: 'Messages', icon: MessageSquare },
-    { href: '/settings', label: 'Settings', icon: Settings },
-  ]
+  const getNavigationItems = () => {
+    const baseItems = [
+      { href: '/', label: 'Discover', icon: Home },
+      { href: '/dashboard', label: 'Dashboard', icon: Calendar },
+      { href: '/messages', label: 'Messages', icon: MessageSquare },
+    ]
+
+    // Add profile management for all users
+    if (profile) {
+      baseItems.push({ 
+        href: '/my-profile', 
+        label: 'My Profile', 
+        icon: User 
+      })
+    }
+
+    // Add general settings last
+    baseItems.push({ href: '/settings', label: 'Settings', icon: Settings })
+
+    return baseItems
+  }
+
+  const navigationItems = getNavigationItems()
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -61,13 +78,10 @@ export function Navigation() {
               <div className="hidden md:flex items-center space-x-2">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-sm font-medium text-primary">
-                    {profile.full_name?.[0] || profile.role[0].toUpperCase()}
+                    {profile.full_name?.[0] || 'U'}
                   </span>
                 </div>
-                <span className="text-sm text-gray-700">{profile.full_name}</span>
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                  {profile.role}
-                </span>
+                <span className="text-sm text-gray-700">{profile.full_name || 'User'}</span>
               </div>
             )}
 
@@ -105,12 +119,12 @@ export function Navigation() {
                 <div className="flex items-center space-x-3 px-2 py-2 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-sm font-medium text-primary">
-                      {profile.full_name?.[0] || profile.role[0].toUpperCase()}
+                      {profile.full_name?.[0] || 'U'}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{profile.full_name}</p>
-                    <p className="text-sm text-gray-500 capitalize">{profile.role}</p>
+                    <p className="font-medium text-gray-900">{profile.full_name || 'User'}</p>
+                    <p className="text-sm text-gray-500">{profile.city || 'Location not set'}</p>
                   </div>
                 </div>
               )}
