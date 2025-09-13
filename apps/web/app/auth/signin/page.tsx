@@ -142,6 +142,29 @@ export default function SignInPage() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="text-center space-y-4">
+          <div className="border-t border-gray-200 pt-6">
+            <p className="text-sm text-gray-600 mb-4">
+              New to Stringr?
+            </p>
+            <div className="space-y-2">
+              <Button
+                onClick={() => router.push('/auth/signup')}
+                className="w-full"
+              >
+                Create Account
+              </Button>
+              <Button
+                onClick={() => router.push('/auth/stringer-signup')}
+                variant="outline"
+                className="w-full"
+              >
+                Join as a Stringer
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

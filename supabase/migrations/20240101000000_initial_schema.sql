@@ -2,7 +2,7 @@
 create extension if not exists "uuid-ossp";
 
 -- Create enum types
-create type public.user_role as enum ('player', 'stringer');
+-- Removed rigid user roles - anyone can be a service provider
 create type public.request_status as enum ('requested', 'accepted', 'in_progress', 'ready', 'completed', 'canceled');
 create type public.payment_status as enum ('unpaid', 'paid', 'refunded');
 create type public.dropoff_method as enum ('meetup', 'pickup', 'ship', 'dropbox');
@@ -10,7 +10,6 @@ create type public.dropoff_method as enum ('meetup', 'pickup', 'ship', 'dropbox'
 -- Create profiles table (extends auth.users)
 create table public.profiles (
   id uuid primary key references auth.users on delete cascade,
-  role public.user_role not null,
   full_name text,
   avatar_url text,
   bio text,
@@ -22,7 +21,7 @@ create table public.profiles (
   updated_at timestamp with time zone default now()
 );
 
--- Create stringer_settings table
+-- Create stringer_settings table (service provider listings)
 create table public.stringer_settings (
   id uuid primary key references public.profiles(id) on delete cascade,
   base_price_cents integer not null default 2500,
@@ -32,10 +31,17 @@ create table public.stringer_settings (
   max_daily_jobs integer default 4,
   services jsonb default '[]'::jsonb, -- e.g. [{"name":"Restring","price_cents":2500}]
   availability jsonb default '[]'::jsonb, -- e.g. weekly schedule blocks
+  
+  -- Verification and status fields
+  is_verified boolean default false,
+  verification_status text default 'pending', -- pending, approved, rejected
+  verification_documents jsonb default '[]'::jsonb, -- uploaded docs
+  admin_notes text,
+  suspended boolean default false,
+  suspension_reason text,
+  
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
-  -- Note: constraint removed due to PostgreSQL subquery limitation in check constraints
-  -- We'll enforce this constraint at the application level
 );
 
 -- Create requests table
@@ -96,7 +102,7 @@ from public.reviews
 group by stringer_id;
 
 -- Create indexes for performance
-create index profiles_role_idx on public.profiles(role);
+-- Removed role index since roles no longer exist
 create index profiles_location_idx on public.profiles(lat, lng) where lat is not null and lng is not null;
 create index requests_player_id_idx on public.requests(player_id);
 create index requests_stringer_id_idx on public.requests(stringer_id) where stringer_id is not null;

@@ -1,13 +1,11 @@
 import { z } from 'zod';
 
-// Core types
-export type Role = 'player' | 'stringer';
+// Core types  
 export type RequestStatus = 'requested' | 'accepted' | 'in_progress' | 'ready' | 'completed' | 'canceled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 export type DropoffMethod = 'meetup' | 'pickup' | 'ship' | 'dropbox';
 
 // Zod schemas for validation
-export const RoleSchema = z.enum(['player', 'stringer']);
 export const RequestStatusSchema = z.enum(['requested', 'accepted', 'in_progress', 'ready', 'completed', 'canceled']);
 export const PaymentStatusSchema = z.enum(['unpaid', 'paid', 'refunded']);
 export const DropoffMethodSchema = z.enum(['meetup', 'pickup', 'ship', 'dropbox']);
@@ -15,7 +13,6 @@ export const DropoffMethodSchema = z.enum(['meetup', 'pickup', 'ship', 'dropbox'
 // Profile types
 export interface Profile {
   id: string;
-  role: Role;
   full_name?: string;
   avatar_url?: string;
   bio?: string;
@@ -29,7 +26,6 @@ export interface Profile {
 
 export const ProfileSchema = z.object({
   id: z.string().uuid(),
-  role: RoleSchema,
   full_name: z.string().optional(),
   avatar_url: z.string().url().optional(),
   bio: z.string().optional(),
