@@ -6,7 +6,7 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'RallyStrings - Tennis Racquet Stringing Marketplace',
+  title: 'Stringr',
   description: 'Connect with local tennis stringers for quick, affordable racquet restringing. The Uber for tennis stringing.',
   keywords: 'tennis, stringing, racquet, restring, marketplace, local',
 }
