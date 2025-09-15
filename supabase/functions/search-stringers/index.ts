@@ -73,24 +73,39 @@ serve(async (req) => {
       .map(stringer => {
         // Calculate distance using haversine formula
         const distance = calculateDistance(lat, lng, stringer.lat, stringer.lng)
-        return { ...stringer, distance_km: distance }
+        
+        // Convert stringer_ratings array to single rating object for frontend compatibility
+        const rating = stringer.stringer_ratings && stringer.stringer_ratings.length > 0 
+          ? {
+              stringer_id: stringer.id,
+              avg_rating: stringer.stringer_ratings[0].avg_rating,
+              review_count: stringer.stringer_ratings[0].review_count
+            }
+          : undefined
+
+        return { 
+          ...stringer, 
+          distance_km: distance,
+          rating,
+          stringer_ratings: undefined // Remove the array version for frontend
+        }
       })
       .filter(stringer => {
         // Filter by radius
         if (stringer.distance_km > radius_km) return false
         
         // Filter by minimum rating
-        if (min_rating && (!stringer.stringer_ratings?.[0]?.avg_rating || stringer.stringer_ratings[0].avg_rating < min_rating)) {
+        if (min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < min_rating)) {
           return false
         }
         
-        // Filter by max price
-        if (max_price_cents && stringer.stringer_settings?.[0]?.base_price_cents > max_price_cents) {
+        // Filter by max price - stringer_settings is a single object, not array
+        if (max_price_cents && stringer.stringer_settings?.base_price_cents > max_price_cents) {
           return false
         }
         
         // Filter by rush availability
-        if (accepts_rush && !stringer.stringer_settings?.[0]?.accepts_rush) {
+        if (accepts_rush && !stringer.stringer_settings?.accepts_rush) {
           return false
         }
         

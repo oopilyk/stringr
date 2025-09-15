@@ -40,7 +40,11 @@ export default function MyProfilePage() {
   const supabase = createClient()
 
   const basicForm = useForm<ProfileForm>()
-  const serviceForm = useForm<ServiceProviderForm>()
+  const serviceForm = useForm<ServiceProviderForm>({
+    defaultValues: {
+      services: [{ name: '', price_cents: 2500 }] // Initialize with one empty service
+    }
+  })
 
   const services = serviceForm.watch('services') || []
   const acceptsRush = serviceForm.watch('accepts_rush')
@@ -121,12 +125,12 @@ export default function MyProfilePage() {
   }
 
   const addService = () => {
-    const currentServices = serviceForm.getValues('services')
+    const currentServices = serviceForm.getValues('services') || []
     serviceForm.setValue('services', [...currentServices, { name: '', price_cents: 2500 }])
   }
 
   const removeService = (index: number) => {
-    const currentServices = serviceForm.getValues('services')
+    const currentServices = serviceForm.getValues('services') || []
     serviceForm.setValue('services', currentServices.filter((_, i) => i !== index))
   }
 
@@ -165,22 +169,30 @@ export default function MyProfilePage() {
   const handleServiceProviderUpdate = async (data: ServiceProviderForm) => {
     if (!profile?.id) return
 
+    // Validate that at least one service has a name
+    const validServices = data.services?.filter(service => service.name.trim()) || []
+    if (validServices.length === 0) {
+      setMessage('Please add at least one service with a name')
+      return
+    }
+
     setIsLoading(true)
     setMessage('')
 
     try {
-      // Update profile
+      // Update profile and set role to stringer
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: profile.id,
           full_name: data.full_name,
           bio: data.bio,
           phone: data.phone,
           city: data.city,
           lat: data.lat,
-          lng: data.lng
+          lng: data.lng,
+          role: 'stringer' // Set role to stringer when providing services
         })
-        .eq('id', profile.id)
 
       if (profileError) {
         setMessage(`Profile error: ${profileError.message}`)
@@ -197,7 +209,7 @@ export default function MyProfilePage() {
           accepts_rush: data.accepts_rush,
           rush_fee_cents: data.rush_fee_cents,
           max_daily_jobs: data.max_daily_jobs,
-          services: data.services,
+          services: validServices,
           verification_status: isServiceProvider ? undefined : 'pending' // Only set for new providers
         })
 
@@ -414,8 +426,13 @@ export default function MyProfilePage() {
                       <label className="block text-sm font-medium text-gray-700">Full Name</label>
                       <input
                         {...serviceForm.register('full_name', { required: 'Name is required' })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                        className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary ${
+                          serviceForm.formState.errors.full_name ? 'border-red-300' : 'border-gray-300'
+                        }`}
                       />
+                      {serviceForm.formState.errors.full_name && (
+                        <p className="mt-1 text-sm text-red-600">{serviceForm.formState.errors.full_name.message}</p>
+                      )}
                     </div>
 
                     <div>
@@ -423,8 +440,13 @@ export default function MyProfilePage() {
                       <input
                         {...serviceForm.register('phone', { required: 'Phone is required' })}
                         type="tel"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                        className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary ${
+                          serviceForm.formState.errors.phone ? 'border-red-300' : 'border-gray-300'
+                        }`}
                       />
+                      {serviceForm.formState.errors.phone && (
+                        <p className="mt-1 text-sm text-red-600">{serviceForm.formState.errors.phone.message}</p>
+                      )}
                     </div>
                   </div>
 
@@ -433,9 +455,14 @@ export default function MyProfilePage() {
                     <textarea
                       {...serviceForm.register('bio', { required: 'Bio is required' })}
                       rows={3}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                      className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary ${
+                        serviceForm.formState.errors.bio ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       placeholder="Tell users about your experience, certifications, and specialties..."
                     />
+                    {serviceForm.formState.errors.bio && (
+                      <p className="mt-1 text-sm text-red-600">{serviceForm.formState.errors.bio.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -453,9 +480,14 @@ export default function MyProfilePage() {
                     </div>
                     <input
                       {...serviceForm.register('city', { required: 'City is required' })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                      className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary ${
+                        serviceForm.formState.errors.city ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       placeholder="e.g., Baltimore, MD"
                     />
+                    {serviceForm.formState.errors.city && (
+                      <p className="mt-1 text-sm text-red-600">{serviceForm.formState.errors.city.message}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -482,11 +514,16 @@ export default function MyProfilePage() {
                           type="number"
                           step="100"
                           min="1000"
-                          className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                          className={`pl-10 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary ${
+                            serviceForm.formState.errors.base_price_cents ? 'border-red-300' : 'border-gray-300'
+                          }`}
                           onChange={(e) => serviceForm.setValue('base_price_cents', parseInt(e.target.value) || 0)}
                         />
                       </div>
                       <p className="text-xs text-gray-500">Price in cents (e.g., 2500 = $25.00)</p>
+                      {serviceForm.formState.errors.base_price_cents && (
+                        <p className="mt-1 text-sm text-red-600">{serviceForm.formState.errors.base_price_cents.message}</p>
+                      )}
                     </div>
 
                     <div>
