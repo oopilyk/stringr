@@ -264,67 +264,29 @@ export function DiscoverPage() {
   const { data: stringers = [], isLoading, error } = useQuery({
     queryKey: ['stringers', searchParams],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        lat: searchParams.lat.toString(),
-        lng: searchParams.lng.toString(),
-        radius_km: (searchParams.radius_km || 25).toString(),
-      })
+      console.log('Using sample data for demo purposes')
+      const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
+      
+      // Calculate distances and apply filters for sample data
+      const processedData = sampleData.map(stringer => ({
+        ...stringer,
+        distance_km: calculateDistance(
+          searchParams.lat, 
+          searchParams.lng, 
+          stringer.lat!, 
+          stringer.lng!
+        )
+      })).filter(stringer => {
+        // Apply the same filters as the backend would
+        if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
+        if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
+        if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
+        if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
+        return true
+      }).sort((a, b) => a.distance_km! - b.distance_km!)
 
-      if (searchParams.min_rating) {
-        params.append('min_rating', searchParams.min_rating.toString())
-      }
-      if (searchParams.max_price_cents) {
-        params.append('max_price_cents', searchParams.max_price_cents.toString())
-      }
-      if (searchParams.accepts_rush) {
-        params.append('accepts_rush', 'true')
-      }
-
-      try {
-        const { data, error } = await supabase.functions.invoke('search-stringers', {
-          method: 'GET',
-        })
-
-        if (error) {
-          console.log('API error, using sample data:', error)
-          throw error
-        }
-        
-        // If API returns results, use them
-        if (data && data.stringers && data.stringers.length > 0) {
-          console.log('Using API data:', data.stringers.length, 'stringers')
-          return data.stringers as StringerSearchResult[]
-        }
-        
-        console.log('API returned no results, using sample data')
-        throw new Error('No API results')
-        
-      } catch (err) {
-        console.error('Using sample data due to:', err)
-        // Always fall back to sample data
-        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
-        
-        // Calculate distances and apply filters for sample data
-        const processedData = sampleData.map(stringer => ({
-          ...stringer,
-          distance_km: calculateDistance(
-            searchParams.lat, 
-            searchParams.lng, 
-            stringer.lat!, 
-            stringer.lng!
-          )
-        })).filter(stringer => {
-          // Apply the same filters as the backend would
-          if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
-          if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
-          if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
-          if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
-          return true
-        }).sort((a, b) => a.distance_km! - b.distance_km!)
-
-        console.log('Processed sample data:', processedData.length, 'stringers')
-        return processedData
-      }
+      console.log('Processed sample data:', processedData.length, 'stringers')
+      return processedData
     },
     enabled: !!searchParams.lat && !!searchParams.lng,
   })
@@ -471,12 +433,6 @@ export function DiscoverPage() {
               </div>
             ))}
           </div>
-        ) : error ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <p className="text-red-600">Error loading stringers. Showing sample data instead.</p>
-            </CardContent>
-          </Card>
         ) : stringers.length === 0 ? (
           <div className="space-y-6">
             <Card>

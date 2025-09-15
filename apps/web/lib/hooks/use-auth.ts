@@ -32,22 +32,15 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [supabase.auth])
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (error) throw error
-      return data as Profile
-    },
-    enabled: !!user?.id,
-  })
+  // For demo purposes, create a mock profile instead of querying the database
+  const profile = user ? {
+    id: user.id,
+    full_name: user.email?.split('@')[0] || 'Demo User',
+    role: 'player', // Default role for demo
+    email: user.email,
+    created_at: new Date().toISOString(),
+  } : null
+  const profileLoading = false
 
   return {
     user,

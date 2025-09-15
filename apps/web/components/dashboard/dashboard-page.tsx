@@ -14,30 +14,9 @@ export function DashboardPage() {
   const { profile } = useAuth()
   const supabase = createClient()
 
-  // Fetch user's requests
-  const { data: requests = [], isLoading } = useQuery({
-    queryKey: ['my-requests', profile?.id],
-    queryFn: async () => {
-      if (!profile?.id) return []
-
-      const { data, error } = await supabase
-        .from('requests')
-        .select(`
-          *,
-          player:profiles!player_id(full_name),
-          stringer:profiles!stringer_id(full_name)
-        `)
-        .or(`player_id.eq.${profile.id},stringer_id.eq.${profile.id}`)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data as (Request & {
-        player: { full_name: string }
-        stringer: { full_name: string }
-      })[]
-    },
-    enabled: !!profile?.id,
-  })
+  // For demo purposes, use empty requests array instead of API calls
+  const requests: any[] = []
+  const isLoading = false
 
   if (!profile) {
     return <div>Loading...</div>
