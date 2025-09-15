@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Navigation } from "/Users/owenakers/Desktop/Stringr/stringr/apps/web/components/layout/navigation"
+import { Navigation } from '@/components/layout/navigation'
 
 const demoConversations = [
   {
