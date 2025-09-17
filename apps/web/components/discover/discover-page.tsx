@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase'
+import { createClient, supabaseUrl, supabaseAnonKey } from '@/lib/supabase'
 import { StringerCard } from '@rally-strings/ui'
 import { Button } from '@rally-strings/ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rally-strings/ui'
@@ -264,31 +264,94 @@ export function DiscoverPage() {
   const { data: stringers = [], isLoading, error } = useQuery({
     queryKey: ['stringers', searchParams],
     queryFn: async () => {
-      console.log('Using sample data for demo purposes')
-      const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
-      
-      // Calculate distances and apply filters for sample data
-      const processedData = sampleData.map(stringer => ({
-        ...stringer,
-        distance_km: calculateDistance(
-          searchParams.lat, 
-          searchParams.lng, 
-          stringer.lat!, 
-          stringer.lng!
-        )
-      })).filter(stringer => {
-        // Apply the same filters as the backend would
-        if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
-        if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
-        if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
-        if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
-        return true
-      }).sort((a, b) => a.distance_km! - b.distance_km!)
+      const params = new URLSearchParams({
+        lat: searchParams.lat.toString(),
+        lng: searchParams.lng.toString(),
+        radius_km: (searchParams.radius_km || 25).toString(),
+      })
 
-      console.log('Processed sample data:', processedData.length, 'stringers')
-      return processedData
+      if (searchParams.min_rating) {
+        params.append('min_rating', searchParams.min_rating.toString())
+      }
+      if (searchParams.max_price_cents) {
+        params.append('max_price_cents', searchParams.max_price_cents.toString())
+      }
+      if (searchParams.accepts_rush) {
+        params.append('accepts_rush', 'true')
+      }
+
+      try {
+        // Get current session for auth
+        const session = await supabase.auth.getSession()
+        const accessToken = session.data.session?.access_token
+        
+        if (!accessToken) {
+          console.log('No access token, using sample data')
+          throw new Error('No access token')
+        }
+
+        // Call the API with proper authentication
+        const functionUrl = `${supabaseUrl}/functions/v1/search-stringers?${params.toString()}`
+        
+        const response = await fetch(functionUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          console.log('API error, using sample data:', response.status, response.statusText)
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+
+        if (data.error) {
+          console.log('API error, using sample data:', data.error)
+          throw new Error(data.error)
+        }
+        
+        // If API returns results, use them
+        if (data && data.stringers && data.stringers.length > 0) {
+          console.log('Using real API data:', data.stringers.length, 'stringers')
+          return data.stringers as StringerSearchResult[]
+        }
+        
+        console.log('API returned no results, using sample data')
+        throw new Error('No API results')
+        
+      } catch (err) {
+        console.log('API failed, falling back to sample data:', err)
+        // Always fall back to sample data if API fails
+        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
+        
+        // Calculate distances and apply filters for sample data
+        const processedData = sampleData.map(stringer => ({
+          ...stringer,
+          distance_km: calculateDistance(
+            searchParams.lat, 
+            searchParams.lng, 
+            stringer.lat!, 
+            stringer.lng!
+          )
+        })).filter(stringer => {
+          // Apply the same filters as the backend would
+          if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
+          if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
+          if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
+          if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
+          return true
+        }).sort((a, b) => a.distance_km! - b.distance_km!)
+
+        console.log('Processed sample data fallback:', processedData.length, 'stringers')
+        return processedData
+      }
     },
     enabled: !!searchParams.lat && !!searchParams.lng,
+    retry: false, // Don't retry failed API calls
   })
 
   const handleStringerSelect = (stringer: StringerSearchResult) => {
@@ -433,6 +496,12 @@ export function DiscoverPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-yellow-600">Using sample data - API temporarily unavailable.</p>
+            </CardContent>
+          </Card>
         ) : stringers.length === 0 ? (
           <div className="space-y-6">
             <Card>
