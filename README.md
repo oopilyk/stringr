@@ -1,8 +1,8 @@
-# RallyStrings 🎾
+# Stringr
 
 **Tennis racquet stringing marketplace - "Uber for stringing"**
 
-RallyStrings connects local tennis stringers with players who need quick, affordable racquet restringing. Think of it as Uber for tennis stringing with lightweight social features.
+Stringr connects local tennis stringers with players who need quick, affordable racquet restringing. Think of it as Uber for tennis stringing with lightweight social features.
 
 ## 🎯 Product Vision
 
