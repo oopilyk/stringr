@@ -8,6 +8,7 @@ import { Button } from '@rally-strings/ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rally-strings/ui'
 import { useForm } from 'react-hook-form'
 import { Navigation } from '@/components/layout/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { MapPin, Save, Plus, Trash2, DollarSign, Clock, Star, EyeOff, AlertTriangle, Shield, Upload, CheckCircle } from 'lucide-react'
 
 interface ProfileForm {
@@ -38,6 +39,7 @@ export default function MyProfilePage() {
   const [showServiceProviderForm, setShowServiceProviderForm] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const queryClient = useQueryClient()
 
   const basicForm = useForm<ProfileForm>()
   const serviceForm = useForm<ServiceProviderForm>({
@@ -221,6 +223,9 @@ export default function MyProfilePage() {
       setIsServiceProvider(true)
       setMessage('Service provider profile updated successfully! You are now discoverable by users.')
       
+      // Invalidate stringer search cache so discover page updates immediately
+      queryClient.invalidateQueries({ queryKey: ['stringers'] })
+      
       // Reload data
       loadUserData()
     } catch (error) {
@@ -243,20 +248,35 @@ export default function MyProfilePage() {
     setMessage('')
 
     try {
-      const { error } = await supabase
+      // Delete stringer settings
+      const { error: settingsError } = await supabase
         .from('stringer_settings')
         .delete()
         .eq('id', profile.id)
 
-      if (error) {
-        setMessage(`Error: ${error.message}`)
+      if (settingsError) {
+        setMessage(`Error: ${settingsError.message}`)
         return
+      }
+
+      // Update role back to 'player'
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'player' })
+        .eq('id', profile.id)
+
+      if (profileError) {
+        console.warn('Could not update role to player:', profileError.message)
+        // Don't fail the operation if role update fails
       }
 
       setIsServiceProvider(false)
       setServiceProviderSettings(null)
       setShowServiceProviderForm(false)
       setMessage('You are no longer listed as a service provider.')
+      
+      // Invalidate stringer search cache so discover page updates immediately
+      queryClient.invalidateQueries({ queryKey: ['stringers'] })
     } catch (error) {
       setMessage('An unexpected error occurred')
     } finally {

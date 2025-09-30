@@ -32,10 +32,10 @@ async function seedData() {
           role: 'stringer' as const,
           full_name: 'Marco Rodriguez',
           bio: '10+ years stringing experience. Former college player, specializes in poly and natural gut hybrids.',
-          city: 'Palo Alto',
-          lat: 37.4419,
-          lng: -122.1430,
-          phone: '+1 (555) 123-4567'
+          city: 'Baltimore',
+          lat: 39.2904,
+          lng: -76.6122,
+          phone: '+1 (410) 123-4567'
         },
         settings: {
           base_price_cents: 2500, // $25
@@ -66,10 +66,10 @@ async function seedData() {
           role: 'stringer' as const,
           full_name: 'Sarah Chen',
           bio: 'Professional racquet technician. Quick turnaround, attention to detail. Available weekends!',
-          city: 'San Francisco',
-          lat: 37.7749,
-          lng: -122.4194,
-          phone: '+1 (555) 234-5678'
+          city: 'Towson',
+          lat: 39.4015,
+          lng: -76.6017,
+          phone: '+1 (410) 234-5678'
         },
         settings: {
           base_price_cents: 3000, // $30
@@ -98,10 +98,10 @@ async function seedData() {
           role: 'stringer' as const,
           full_name: 'David Park',
           bio: 'Budget-friendly option. Good for recreational players. Same-day service available.',
-          city: 'Mountain View',
-          lat: 37.3861,
-          lng: -122.0839,
-          phone: '+1 (555) 345-6789'
+          city: 'Columbia',
+          lat: 39.2037,
+          lng: -76.8610,
+          phone: '+1 (410) 345-6789'
         },
         settings: {
           base_price_cents: 2000, // $20
@@ -133,10 +133,10 @@ async function seedData() {
         profile: {
           role: 'player' as const,
           full_name: 'Alex Johnson',
-          city: 'Palo Alto',
-          lat: 37.4419,
-          lng: -122.1430,
-          phone: '+1 (555) 456-7890'
+          city: 'Annapolis',
+          lat: 38.9784,
+          lng: -76.4951,
+          phone: '+1 (410) 456-7890'
         }
       },
       {
@@ -146,10 +146,10 @@ async function seedData() {
         profile: {
           role: 'player' as const,
           full_name: 'Emma Wilson',
-          city: 'San Mateo',
-          lat: 37.5630,
-          lng: -122.3255,
-          phone: '+1 (555) 567-8901'
+          city: 'Rockville',
+          lat: 39.0840,
+          lng: -77.1528,
+          phone: '+1 (301) 567-8901'
         }
       }
     ]

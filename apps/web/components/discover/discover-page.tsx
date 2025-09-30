@@ -230,8 +230,9 @@ export function DiscoverPage() {
   const { profile } = useAuth()
   const [selectedStringer, setSelectedStringer] = useState<StringerSearchResult | null>(null)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationStatus, setLocationStatus] = useState<'detecting' | 'granted' | 'denied' | 'error'>('detecting')
   const [searchParams, setSearchParams] = useState<SearchStringersParams>({
-    lat: 39.2904, // Default to Baltimore
+    lat: 39.2904, // Default to Baltimore (where sample data is located)
     lng: -76.6122,
     radius_km: 25
   })
@@ -242,10 +243,13 @@ export function DiscoverPage() {
   // Get user's location
   useEffect(() => {
     if (navigator.geolocation) {
+      setLocationStatus('detecting')
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords
+          console.log('✅ Location detected:', latitude, longitude)
           setLocation({ lat: latitude, lng: longitude })
+          setLocationStatus('granted')
           setSearchParams(prev => ({
             ...prev,
             lat: latitude,
@@ -253,14 +257,25 @@ export function DiscoverPage() {
           }))
         },
         (error) => {
-          console.log('Location access denied:', error)
-          // Use default location (Palo Alto)
+          console.log('❌ Location access failed:', error.message, 'Code:', error.code)
+          setLocationStatus(error.code === 1 ? 'denied' : 'error')
+          // Keep using default location (Baltimore) where sample data exists
+          setLocation({ lat: 39.2904, lng: -76.6122 })
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
         }
       )
+    } else {
+      console.log('❌ Geolocation not supported by browser')
+      setLocationStatus('error')
+      setLocation({ lat: 39.2904, lng: -76.6122 })
     }
   }, [])
 
-  // Fetch stringers from API with fallback to sample data
+  // Fetch stringers from API
   const { data: stringers = [], isLoading, error } = useQuery({
     queryKey: ['stringers', searchParams],
     queryFn: async () => {
@@ -280,83 +295,78 @@ export function DiscoverPage() {
         params.append('accepts_rush', 'true')
       }
 
-      try {
-        // Get current session for auth
-        const session = await supabase.auth.getSession()
-        const accessToken = session.data.session?.access_token
-        
-        if (!accessToken) {
-          console.log('No access token, using sample data')
-          throw new Error('No access token')
-        }
-
-        // Call the API with proper authentication
-        const functionUrl = `${supabaseUrl}/functions/v1/search-stringers?${params.toString()}`
-        
-        const response = await fetch(functionUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': supabaseAnonKey,
-            'Content-Type': 'application/json',
-          },
-        })
-
-        if (!response.ok) {
-          console.log('API error, using sample data:', response.status, response.statusText)
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-          console.log('API error, using sample data:', data.error)
-          throw new Error(data.error)
-        }
-        
-        // If API returns results, use them
-        if (data && data.stringers && data.stringers.length > 0) {
-          console.log('Using real API data:', data.stringers.length, 'stringers')
-          return data.stringers as StringerSearchResult[]
-        }
-        
-        console.log('API returned no results, using sample data')
-        throw new Error('No API results')
-        
-      } catch (err) {
-        console.log('API failed, falling back to sample data:', err)
-        // Always fall back to sample data if API fails
-        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
-        
-        // Calculate distances and apply filters for sample data
-        const processedData = sampleData.map(stringer => ({
-          ...stringer,
-          distance_km: calculateDistance(
-            searchParams.lat, 
-            searchParams.lng, 
-            stringer.lat!, 
-            stringer.lng!
-          )
-        })).filter(stringer => {
-          // Apply the same filters as the backend would
-          if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
-          if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
-          if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
-          if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
-          return true
-        }).sort((a, b) => a.distance_km! - b.distance_km!)
-
-        console.log('Processed sample data fallback:', processedData.length, 'stringers')
-        return processedData
+      // Get current session for auth
+      const session = await supabase.auth.getSession()
+      const accessToken = session.data.session?.access_token
+      
+      if (!accessToken) {
+        console.log('No access token available')
+        throw new Error('Authentication required')
       }
+
+      // Call the API with proper authentication
+      const functionUrl = `${supabaseUrl}/functions/v1/search-stringers?${params.toString()}`
+      
+      const response = await fetch(functionUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': supabaseAnonKey,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API error:', response.status, response.statusText, errorText)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      if (data.error) {
+        console.error('API error:', data.error)
+        throw new Error(data.error)
+      }
+      
+      console.log('API returned:', data.stringers?.length || 0, 'stringers')
+      return data.stringers as StringerSearchResult[] || []
     },
     enabled: !!searchParams.lat && !!searchParams.lng,
-    retry: false, // Don't retry failed API calls
+    retry: 1, // Retry once on failure
   })
 
   const handleStringerSelect = (stringer: StringerSearchResult) => {
     setSelectedStringer(stringer)
     setIsRequestDialogOpen(true)
+  }
+
+  const requestLocation = () => {
+    if (navigator.geolocation) {
+      setLocationStatus('detecting')
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          console.log('✅ Manual location request - Location detected:', latitude, longitude)
+          setLocation({ lat: latitude, lng: longitude })
+          setLocationStatus('granted')
+          setSearchParams(prev => ({
+            ...prev,
+            lat: latitude,
+            lng: longitude
+          }))
+        },
+        (error) => {
+          console.log('❌ Manual location request failed:', error.message, 'Code:', error.code)
+          setLocationStatus(error.code === 1 ? 'denied' : 'error')
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0 // Force fresh location
+        }
+      )
+    }
   }
 
   if (!profile) {
@@ -476,14 +486,34 @@ export function DiscoverPage() {
               </div>
             </div>
 
-            {location && (
-              <div className="mt-4 flex items-center space-x-2 text-sm text-gray-600">
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm">
                 <MapPin className="w-4 h-4" />
-                <span>
-                  Searching near {location.lat.toFixed(3)}, {location.lng.toFixed(3)}
-                </span>
+                {locationStatus === 'detecting' ? (
+                  <span className="text-blue-600">🔍 Detecting your location...</span>
+                ) : locationStatus === 'granted' ? (
+                  <span className="text-green-600">
+                    📍 Using your location ({location?.lat.toFixed(3)}, {location?.lng.toFixed(3)})
+                  </span>
+                ) : locationStatus === 'denied' ? (
+                  <span className="text-orange-600">📍 Location access denied - using default location</span>
+                ) : (
+                  <span className="text-gray-600">📍 Using default location (Baltimore)</span>
+                )}
               </div>
-            )}
+              {locationStatus !== 'granted' && locationStatus !== 'detecting' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={requestLocation}
+                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                >
+                  <MapPin className="w-4 h-4 mr-1" />
+                  Use My Location
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -499,7 +529,8 @@ export function DiscoverPage() {
         ) : error ? (
           <Card>
             <CardContent className="text-center py-12">
-              <p className="text-yellow-600">Using sample data - API temporarily unavailable.</p>
+              <p className="text-red-600 mb-2">Unable to load stringers at this time.</p>
+              <p className="text-gray-500 text-sm">Please try again or contact support if the problem persists.</p>
             </CardContent>
           </Card>
         ) : stringers.length === 0 ? (
