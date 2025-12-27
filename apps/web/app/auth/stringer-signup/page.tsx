@@ -1,31 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@rally-strings/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rally-strings/ui'
-import { useForm } from 'react-hook-form'
-import { STRING_PRESETS } from '@rally-strings/types'
+import { StringerOnboardingData } from '@rally-strings/types'
+import { useOnboardingAutosave } from '@/lib/hooks/use-onboarding-autosave'
+import { getOnboardingProgress, clearOnboardingProgress } from '@/lib/utils/onboarding-storage'
+import { ProgressIndicator } from '@/components/stringer-onboarding/progress-indicator'
+import { Step1Credentials } from '@/components/stringer-onboarding/step1-credentials'
+import { Step2Background } from '@/components/stringer-onboarding/step2-background'
+import { Step3Equipment } from '@/components/stringer-onboarding/step3-equipment'
+import { Step4Pricing } from '@/components/stringer-onboarding/step4-pricing'
+import { Step5Inventory } from '@/components/stringer-onboarding/step5-inventory'
+import { Step6Availability } from '@/components/stringer-onboarding/step6-availability'
+import { Step7Review } from '@/components/stringer-onboarding/step7-review'
+import { Button, Card, CardContent } from '@rally-strings/ui'
 
-interface StringerSignupForm {
-  email: string
-  full_name: string
-  phone: string
-  city: string
-  bio: string
-  base_price_cents: number
-  turnaround_hours: number
-  accepts_rush: boolean
-  rush_fee_cents: number
-  max_daily_jobs: number
-  services: { name: string; price_cents: number }[]
-}
+const STEP_TITLES = [
+  '',
+  'Credentials & Location',
+  'Background & Experience',
+  'Equipment & Capabilities',
+  'Pricing & Turnaround',
+  'String Inventory',
+  'Availability & Preferences',
+  'Review & Submit',
+]
 
 export default function StringerSignupPage() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState('')
-  const [step, setStep] = useState(1) // 1: Basic Info, 2: Business Details, 3: Services
   const router = useRouter()
   const supabase = createClient()
 
@@ -35,373 +42,219 @@ export default function StringerSignupPage() {
     formState: { errors },
     watch,
     setValue,
-    getValues
-  } = useForm<StringerSignupForm>({
+    getValues,
+    trigger,
+  } = useForm<StringerOnboardingData>({
     defaultValues: {
       base_price_cents: 2500,
       turnaround_hours: 24,
       accepts_rush: true,
       rush_fee_cents: 500,
       max_daily_jobs: 5,
-      services: [
-        { name: 'Standard Restring', price_cents: 2500 },
-        { name: 'Premium String', price_cents: 3500 }
-      ]
-    }
+      accepts_player_strings: true,
+      string_inventory: [],
+      dropoff_methods: [],
+      availability: [],
+    },
   })
 
-  const services = watch('services')
-  const acceptsRush = watch('accepts_rush')
+  // Load saved progress on mount
+  useEffect(() => {
+    const saved = getOnboardingProgress()
+    if (saved) {
+      Object.keys(saved).forEach((key) => {
+        if (key !== '_meta') {
+          setValue(key as any, saved[key])
+        }
+      })
+      if (saved._meta?.lastStep && saved._meta.lastStep > 1) {
+        // If they've already created an account, start at their last step
+        setCurrentStep(saved._meta.lastStep)
+      }
+    }
+  }, [setValue])
 
-  const addService = () => {
-    const currentServices = getValues('services')
-    setValue('services', [...currentServices, { name: '', price_cents: 2500 }])
-  }
+  // Autosave hook
+  const { clearProgress } = useOnboardingAutosave({
+    watch,
+    currentStep,
+    userId,
+    debounceMs: 2000,
+  })
 
-  const removeService = (index: number) => {
-    const currentServices = getValues('services')
-    setValue('services', currentServices.filter((_, i) => i !== index))
-  }
-
-  const handleNext = () => {
-    if (step < 3) setStep(step + 1)
+  const handleNext = async () => {
+    // For Step 1, validate and create account
+    if (currentStep === 1) {
+      const isValid = await trigger(['email', 'password', 'full_name', 'phone', 'city'])
+      if (!isValid) {
+        setMessage('Please fix errors before continuing')
+        return
+      }
+      await createUserAccount()
+    } else {
+      // For other steps, just move forward (all fields are optional)
+      setCurrentStep((prev) => Math.min(prev + 1, 7))
+    }
   }
 
   const handleBack = () => {
-    if (step > 1) setStep(step - 1)
+    setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const onSubmit = async (data: StringerSignupForm) => {
-    setIsLoading(true)
+  const jumpToStep = (step: number) => {
+    setCurrentStep(step)
+  }
+
+  const createUserAccount = async () => {
+    const data = getValues()
+    setIsSubmitting(true)
     setMessage('')
 
     try {
-      // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: 'temp_password_' + Math.random().toString(36).substring(7), // Temporary password
+        password: data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            role: 'stringer'
-          }
-        }
+        },
       })
 
       if (authError) {
         setMessage(`Error: ${authError.message}`)
+        setIsSubmitting(false)
         return
       }
 
       if (authData.user) {
-        // Create profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            role: 'stringer',
-            full_name: data.full_name,
-            phone: data.phone,
-            city: data.city,
-            bio: data.bio
-          })
+        setUserId(authData.user.id)
 
-        if (profileError) {
-          setMessage(`Profile error: ${profileError.message}`)
-          return
-        }
+        // Create initial profile
+        await supabase.from('profiles').insert({
+          id: authData.user.id,
+          full_name: data.full_name,
+          phone: data.phone,
+          city: data.city,
+          lat: data.lat,
+          lng: data.lng,
+        })
 
-        // Create stringer settings
-        const { error: settingsError } = await supabase
-          .from('stringer_settings')
-          .insert({
-            id: authData.user.id,
-            base_price_cents: data.base_price_cents,
-            turnaround_hours: data.turnaround_hours,
-            accepts_rush: data.accepts_rush,
-            rush_fee_cents: data.rush_fee_cents,
-            max_daily_jobs: data.max_daily_jobs,
-            services: data.services
-          })
+        // Create initial stringer_settings
+        await supabase.from('stringer_settings').insert({
+          id: authData.user.id,
+          onboarding_step: 2,
+          base_price_cents: data.base_price_cents,
+          turnaround_hours: data.turnaround_hours,
+          accepts_rush: data.accepts_rush,
+          rush_fee_cents: data.rush_fee_cents,
+          max_daily_jobs: data.max_daily_jobs,
+        })
 
-        if (settingsError) {
-          setMessage(`Settings error: ${settingsError.message}`)
-          return
-        }
-
-        setMessage('Registration successful! Check your email to verify your account.')
-        // Don't redirect immediately, let them check email first
+        setCurrentStep(2)
+        setMessage('Account created successfully!')
       }
     } catch (error) {
+      console.error('Error creating account:', error)
       setMessage('An unexpected error occurred')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
+  }
+
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true)
+    setMessage('')
+
+    try {
+      // Final update to mark onboarding complete
+      await supabase
+        .from('stringer_settings')
+        .update({
+          onboarding_step: 7,
+          onboarding_completed_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+
+      // Clear saved progress
+      clearProgress()
+
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error completing onboarding:', error)
+      setMessage('Failed to complete onboarding')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSaveAndExit = () => {
+    // Progress is already autosaved
+    router.push('/dashboard')
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-8">
+      <div className="max-w-4xl w-full space-y-8">
+        {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-primary">Join Stringr as a Stringer</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Start earning by providing professional stringing services
-          </p>
+          <p className="mt-2 text-sm text-gray-600">Complete your professional profile to start earning</p>
         </div>
 
         {/* Progress Indicator */}
-        <div className="flex justify-center space-x-4 mb-8">
-          {[1, 2, 3].map((stepNumber) => (
-            <div
-              key={stepNumber}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= stepNumber
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {stepNumber}
-            </div>
-          ))}
-        </div>
+        <ProgressIndicator currentStep={currentStep} totalSteps={7} />
 
+        {/* Main Card */}
         <Card>
-          <CardHeader>
-            <CardTitle>
-              {step === 1 && 'Basic Information'}
-              {step === 2 && 'Business Details'}
-              {step === 3 && 'Services & Pricing'}
-            </CardTitle>
-            <CardDescription>
-              {step === 1 && 'Tell us about yourself'}
-              {step === 2 && 'Set up your stringing business'}
-              {step === 3 && 'Configure your services and rates'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {step === 1 && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                      {...register('email', { required: 'Email is required' })}
-                      type="email"
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    />
-                    {errors.email && <p className="text-red-600 text-sm">{errors.email.message}</p>}
-                  </div>
+          <CardContent className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold">{STEP_TITLES[currentStep]}</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Step {currentStep} of 7
+                {currentStep > 1 && ' - All fields optional unless marked with *'}
+              </p>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                    <input
-                      {...register('full_name', { required: 'Name is required' })}
-                      type="text"
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    />
-                    {errors.full_name && <p className="text-red-600 text-sm">{errors.full_name.message}</p>}
-                  </div>
+            {/* Step Content */}
+            <form onSubmit={handleSubmit(currentStep === 7 ? handleFinalSubmit : handleNext)}>
+              {currentStep === 1 && <Step1Credentials register={register} errors={errors} setValue={setValue} watch={watch} />}
+              {currentStep === 2 && <Step2Background register={register} errors={errors} setValue={setValue} watch={watch} />}
+              {currentStep === 3 && <Step3Equipment register={register} errors={errors} setValue={setValue} watch={watch} />}
+              {currentStep === 4 && <Step4Pricing register={register} errors={errors} setValue={setValue} watch={watch} />}
+              {currentStep === 5 && <Step5Inventory register={register} errors={errors} setValue={setValue} watch={watch} getValues={getValues} />}
+              {currentStep === 6 && <Step6Availability register={register} errors={errors} setValue={setValue} watch={watch} getValues={getValues} />}
+              {currentStep === 7 && <Step7Review getValues={getValues} jumpToStep={jumpToStep} />}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
-                    <input
-                      {...register('phone', { required: 'Phone is required' })}
-                      type="tel"
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    />
-                    {errors.phone && <p className="text-red-600 text-sm">{errors.phone.message}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">City</label>
-                    <input
-                      {...register('city', { required: 'City is required' })}
-                      type="text"
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    />
-                    {errors.city && <p className="text-red-600 text-sm">{errors.city.message}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Bio</label>
-                    <textarea
-                      {...register('bio', { required: 'Bio is required' })}
-                      rows={3}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                      placeholder="Tell players about your experience, certifications, and specialties..."
-                    />
-                    {errors.bio && <p className="text-red-600 text-sm">{errors.bio.message}</p>}
-                  </div>
-                </>
-              )}
-
-              {step === 2 && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Base Price</label>
-                      <div className="mt-1 relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
-                        <input
-                          {...register('base_price_cents', { 
-                            required: 'Base price is required',
-                            min: { value: 1000, message: 'Minimum $10' },
-                            max: { value: 10000, message: 'Maximum $100' }
-                          })}
-                          type="number"
-                          step="100"
-                          min="1000"
-                          max="10000"
-                          className="pl-8 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                          onChange={(e) => setValue('base_price_cents', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500">Price in cents (e.g., 2500 = $25.00)</p>
-                      {errors.base_price_cents && <p className="text-red-600 text-sm">{errors.base_price_cents.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Turnaround Time</label>
-                      <select
-                        {...register('turnaround_hours', { required: 'Turnaround time is required' })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                      >
-                        <option value={6}>6 hours</option>
-                        <option value={12}>12 hours</option>
-                        <option value={24}>24 hours</option>
-                        <option value={48}>48 hours</option>
-                        <option value={72}>72 hours</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        {...register('accepts_rush')}
-                        type="checkbox"
-                        className="rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Accept rush orders</span>
-                    </label>
-                  </div>
-
-                  {acceptsRush && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Rush Fee</label>
-                      <div className="mt-1 relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
-                        <input
-                          {...register('rush_fee_cents', { 
-                            min: { value: 0, message: 'Cannot be negative' },
-                            max: { value: 2000, message: 'Maximum $20' }
-                          })}
-                          type="number"
-                          step="100"
-                          min="0"
-                          max="2000"
-                          className="pl-8 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                          onChange={(e) => setValue('rush_fee_cents', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500">Additional fee for rush orders</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Max Daily Jobs</label>
-                    <select
-                      {...register('max_daily_jobs', { required: 'Max daily jobs is required' })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    >
-                      <option value={2}>2 jobs</option>
-                      <option value={3}>3 jobs</option>
-                      <option value={5}>5 jobs</option>
-                      <option value={8}>8 jobs</option>
-                      <option value={10}>10 jobs</option>
-                      <option value={15}>15 jobs</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {step === 3 && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Services Offered</label>
-                    {services.map((service, index) => (
-                      <div key={index} className="flex space-x-2 mb-2">
-                        <input
-                          type="text"
-                          placeholder="Service name"
-                          value={service.name}
-                          onChange={(e) => {
-                            const newServices = [...services]
-                            newServices[index].name = e.target.value
-                            setValue('services', newServices)
-                          }}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                        />
-                        <div className="relative">
-                          <span className="absolute left-3 top-2 text-gray-500">$</span>
-                          <input
-                            type="number"
-                            placeholder="Price"
-                            value={service.price_cents}
-                            onChange={(e) => {
-                              const newServices = [...services]
-                              newServices[index].price_cents = parseInt(e.target.value) || 0
-                              setValue('services', newServices)
-                            }}
-                            className="pl-8 w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                          />
-                        </div>
-                        {services.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeService(index)}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addService}
-                      className="mt-2"
-                    >
-                      Add Service
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-between pt-4">
-                {step > 1 && (
-                  <Button type="button" variant="outline" onClick={handleBack}>
+              {/* Navigation */}
+              <div className="flex justify-between pt-6 mt-6 border-t">
+                {currentStep > 1 && (
+                  <Button type="button" variant="outline" onClick={handleBack} disabled={isSubmitting}>
                     Back
                   </Button>
                 )}
-                
-                <div className="ml-auto">
-                  {step < 3 ? (
-                    <Button type="button" onClick={handleNext}>
-                      Next
+
+                <div className="ml-auto flex gap-2">
+                  {currentStep > 1 && currentStep < 7 && (
+                    <Button type="button" variant="outline" onClick={handleSaveAndExit} disabled={isSubmitting}>
+                      Save & Exit
+                    </Button>
+                  )}
+                  {currentStep < 7 ? (
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? 'Processing...' : currentStep === 1 ? 'Create Account & Continue' : 'Next'}
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={isLoading}>
-                      {isLoading ? 'Creating Account...' : 'Complete Registration'}
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? 'Submitting...' : 'Complete Registration'}
                     </Button>
                   )}
                 </div>
               </div>
 
               {message && (
-                <div className={`text-sm ${message.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                <div
+                  className={`mt-4 text-sm ${message.startsWith('Error') || message.startsWith('Failed') ? 'text-red-600' : 'text-green-600'}`}
+                >
                   {message}
                 </div>
               )}
@@ -409,15 +262,19 @@ export default function StringerSignupPage() {
           </CardContent>
         </Card>
 
+        {/* Help Text */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <button
-              onClick={() => router.push('/auth/signin')}
-              className="text-primary hover:underline"
-            >
-              Sign in
-            </button>
+            {currentStep > 1 ? 'Your progress is automatically saved. You can exit and return anytime.' : 'Already have an account? '}
+            {currentStep === 1 && (
+              <button
+                type="button"
+                onClick={() => router.push('/auth/signin')}
+                className="text-primary hover:underline font-medium"
+              >
+                Sign in
+              </button>
+            )}
           </p>
         </div>
       </div>

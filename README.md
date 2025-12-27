@@ -59,7 +59,7 @@ rally-strings/
 
 ```bash
 git clone <repository-url>
-cd rally-strings
+cd stringr
 npm install
 ```
 

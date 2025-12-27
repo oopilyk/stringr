@@ -29,7 +29,6 @@ async function seedData() {
         email: 'marco@example.com',
         password: 'password123',
         profile: {
-          role: 'stringer' as const,
           full_name: 'Marco Rodriguez',
           bio: '10+ years stringing experience. Former college player, specializes in poly and natural gut hybrids.',
           city: 'Palo Alto',
@@ -63,7 +62,6 @@ async function seedData() {
         email: 'sarah@example.com',
         password: 'password123',
         profile: {
-          role: 'stringer' as const,
           full_name: 'Sarah Chen',
           bio: 'Professional racquet technician. Quick turnaround, attention to detail. Available weekends!',
           city: 'San Francisco',
@@ -95,7 +93,6 @@ async function seedData() {
         email: 'david@example.com',
         password: 'password123',
         profile: {
-          role: 'stringer' as const,
           full_name: 'David Park',
           bio: 'Budget-friendly option. Good for recreational players. Same-day service available.',
           city: 'Mountain View',
@@ -131,7 +128,6 @@ async function seedData() {
         email: 'alex@example.com',
         password: 'password123',
         profile: {
-          role: 'player' as const,
           full_name: 'Alex Johnson',
           city: 'Palo Alto',
           lat: 37.4419,
@@ -144,7 +140,6 @@ async function seedData() {
         email: 'emma@example.com',
         password: 'password123',
         profile: {
-          role: 'player' as const,
           full_name: 'Emma Wilson',
           city: 'San Mateo',
           lat: 37.5630,
@@ -231,6 +226,19 @@ async function seedData() {
     }
 
     // Get created users for creating requests
+    // Get stringers (users with stringer_settings)
+    const { data: stringerSettings, error: stringerError } = await supabase
+      .from('stringer_settings')
+      .select('id')
+
+    if (stringerError) {
+      console.error('Error fetching stringers:', stringerError)
+      return
+    }
+
+    const stringerIds = stringerSettings.map(s => s.id)
+
+    // Get all profiles
     const { data: allProfiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
@@ -240,8 +248,8 @@ async function seedData() {
       return
     }
 
-    const stringerProfiles = allProfiles.filter(p => p.role === 'stringer')
-    const playerProfiles = allProfiles.filter(p => p.role === 'player')
+    const stringerProfiles = allProfiles.filter(p => stringerIds.includes(p.id))
+    const playerProfiles = allProfiles.filter(p => !stringerIds.includes(p.id))
 
     // Create sample requests
     console.log('Creating sample requests...')
