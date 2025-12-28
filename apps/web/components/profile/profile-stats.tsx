@@ -1,6 +1,6 @@
 'use client'
 
-import { Profile } from '@rally-strings/types'
+import { Profile } from '@stringr/types'
 import { Award, Target, Star, TrendingUp } from 'lucide-react'
 
 interface ProfileStatsProps {

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { StringerOnboardingData } from '@rally-strings/types'
+import { StringerOnboardingData } from '@stringr/types'
 import { useOnboardingAutosave } from '@/lib/hooks/use-onboarding-autosave'
 import { getOnboardingProgress, clearOnboardingProgress } from '@/lib/utils/onboarding-storage'
 import { ProgressIndicator } from '@/components/stringer-onboarding/progress-indicator'
@@ -15,7 +15,7 @@ import { Step4Pricing } from '@/components/stringer-onboarding/step4-pricing'
 import { Step5Inventory } from '@/components/stringer-onboarding/step5-inventory'
 import { Step6Availability } from '@/components/stringer-onboarding/step6-availability'
 import { Step7Review } from '@/components/stringer-onboarding/step7-review'
-import { Button, Card, CardContent } from '@rally-strings/ui'
+import { Button, Card, CardContent } from '@stringr/ui'
 
 const STEP_TITLES = [
   '',
@@ -58,8 +58,19 @@ export default function StringerSignupPage() {
     },
   })
 
-  // Load saved progress on mount
+  // Load saved progress on mount and URL params
   useEffect(() => {
+    // Check URL params first (from /auth/signup)
+    const params = new URLSearchParams(window.location.search)
+    const emailParam = params.get('email')
+    const passwordParam = params.get('password')
+    const fullNameParam = params.get('full_name')
+
+    if (emailParam) setValue('email', emailParam)
+    if (passwordParam) setValue('password', passwordParam)
+    if (fullNameParam) setValue('full_name', fullNameParam)
+
+    // Then load saved progress
     const saved = getOnboardingProgress()
     if (saved) {
       Object.keys(saved).forEach((key) => {
@@ -136,6 +147,7 @@ export default function StringerSignupPage() {
           city: data.city,
           lat: data.lat,
           lng: data.lng,
+          role: 'stringer',
         })
 
         // Create initial stringer_settings
@@ -227,11 +239,14 @@ export default function StringerSignupPage() {
 
               {/* Navigation */}
               <div className="flex justify-between pt-6 mt-6 border-t">
-                {currentStep > 1 && (
-                  <Button type="button" variant="outline" onClick={handleBack} disabled={isSubmitting}>
-                    Back
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={currentStep === 1 ? () => router.push('/auth/signin') : handleBack}
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
 
                 <div className="ml-auto flex gap-2">
                   {currentStep > 1 && currentStep < 7 && (

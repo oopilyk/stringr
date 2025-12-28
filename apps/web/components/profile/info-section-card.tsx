@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, ReactNode } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@rally-strings/ui'
-import { Button } from '@rally-strings/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@stringr/ui'
+import { Button } from '@stringr/ui'
 import { ChevronDown, ChevronUp, Edit } from 'lucide-react'
 import Link from 'next/link'
 

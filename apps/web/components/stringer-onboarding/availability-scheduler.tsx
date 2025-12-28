@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { AvailabilityBlock } from '@rally-strings/types'
-import { Button, Card } from '@rally-strings/ui'
+import { AvailabilityBlock } from '@stringr/types'
+import { Button, Card } from '@stringr/ui'
 import { Plus, Trash2 } from 'lucide-react'
 
 interface AvailabilitySchedulerProps {

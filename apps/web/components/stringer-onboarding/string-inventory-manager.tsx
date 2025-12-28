@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { StringInventoryItem, STRING_PRESETS } from '@rally-strings/types'
-import { Button, Card } from '@rally-strings/ui'
+import { StringInventoryItem, STRING_PRESETS } from '@stringr/types'
+import { Button, Card } from '@stringr/ui'
 import { Plus, Edit, Trash2, Check, X, DollarSign } from 'lucide-react'
 
 interface StringInventoryManagerProps {

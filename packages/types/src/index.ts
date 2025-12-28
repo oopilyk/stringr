@@ -466,36 +466,36 @@ export const Step6Schema = z.object({
 });
 
 // Error types
-export class RallyStringsError extends Error {
+export class StringrError extends Error {
   constructor(
     message: string,
     public code: string,
     public statusCode: number = 400
   ) {
     super(message);
-    this.name = 'RallyStringsError';
+    this.name = 'StringrError';
   }
 }
 
-export class ValidationError extends RallyStringsError {
+export class ValidationError extends StringrError {
   constructor(message: string) {
     super(message, 'VALIDATION_ERROR', 400);
   }
 }
 
-export class NotFoundError extends RallyStringsError {
+export class NotFoundError extends StringrError {
   constructor(resource: string) {
     super(`${resource} not found`, 'NOT_FOUND', 404);
   }
 }
 
-export class UnauthorizedError extends RallyStringsError {
+export class UnauthorizedError extends StringrError {
   constructor(message: string = 'Unauthorized') {
     super(message, 'UNAUTHORIZED', 401);
   }
 }
 
-export class ConflictError extends RallyStringsError {
+export class ConflictError extends StringrError {
   constructor(message: string) {
     super(message, 'CONFLICT', 409);
   }

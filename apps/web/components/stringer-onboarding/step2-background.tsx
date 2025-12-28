@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData, CERTIFICATIONS, PLAYER_LEVELS, STRINGING_LOCATIONS } from '@rally-strings/types'
+import { StringerOnboardingData, CERTIFICATIONS, PLAYER_LEVELS, STRINGING_LOCATIONS } from '@stringr/types'
 import { useState } from 'react'
 
 interface Step2BackgroundProps {

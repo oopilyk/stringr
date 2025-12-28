@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch, UseFormGetValues } from 'react-hook-form'
-import { StringerOnboardingData, DropoffMethodConfig } from '@rally-strings/types'
+import { StringerOnboardingData, DropoffMethodConfig } from '@stringr/types'
 import { AvailabilityScheduler } from './availability-scheduler'
 import { useState } from 'react'
 

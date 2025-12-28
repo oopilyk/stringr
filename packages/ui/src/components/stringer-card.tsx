@@ -1,36 +1,46 @@
 import { Star, Clock, DollarSign, MapPin } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader } from "./ui/card"
-import { Button } from "./ui/button"
+import { Card, CardContent, CardHeader } from "./ui/card"
 import { cn, formatPrice, formatDuration, formatDistance } from "../lib/utils"
-import type { StringerSearchResult } from "@rally-strings/types"
+import type { StringerSearchResult } from "@stringr/types"
 
 interface StringerCardProps {
   stringer: StringerSearchResult
-  onSelect?: (stringer: StringerSearchResult) => void
+  onViewProfile?: (stringer: StringerSearchResult) => void
   className?: string
 }
 
-export function StringerCard({ stringer, onSelect, className }: StringerCardProps) {
+export function StringerCard({ stringer, onViewProfile, className }: StringerCardProps) {
   const rating = stringer.rating?.avg_rating || 0
   const reviewCount = stringer.rating?.review_count || 0
   const settings = stringer.stringer_settings
 
   return (
-    <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", className)}>
+    <Card
+      className={cn("hover:shadow-md transition-shadow cursor-pointer", className)}
+      onClick={() => onViewProfile?.(stringer)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-lg font-semibold text-primary">
-                {stringer.full_name?.[0] || 'S'}
-              </span>
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+              {stringer.avatar_url ? (
+                <img
+                  src={stringer.avatar_url}
+                  alt={stringer.full_name || 'Stringer'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-semibold text-primary">
+                  {stringer.full_name?.[0] || 'S'}
+                </span>
+              )}
             </div>
             <div>
               <h3 className="font-semibold text-lg">{stringer.full_name}</h3>
               <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                 <MapPin className="w-3 h-3" />
                 <span>{stringer.city}</span>
-                {stringer.distance_km && (
+                {typeof stringer.distance_km === 'number' && (
                   <>
                     <span>•</span>
                     <span>{formatDistance(stringer.distance_km)}</span>
@@ -40,7 +50,7 @@ export function StringerCard({ stringer, onSelect, className }: StringerCardProp
             </div>
           </div>
           
-          {rating > 0 && (
+          {rating > 0 && reviewCount > 0 && (
             <div className="flex items-center space-x-1 text-sm">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               <span className="font-medium">{rating.toFixed(1)}</span>
@@ -84,15 +94,6 @@ export function StringerCard({ stringer, onSelect, className }: StringerCardProp
           </div>
         </div>
       </CardContent>
-      
-      <CardFooter>
-        <Button 
-          onClick={() => onSelect?.(stringer)}
-          className="w-full"
-        >
-          Request Stringing
-        </Button>
-      </CardFooter>
     </Card>
   )
 }

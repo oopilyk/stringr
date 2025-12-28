@@ -1,11 +1,11 @@
 'use client'
 
 import { UseFormGetValues } from 'react-hook-form'
-import { StringerOnboardingData } from '@rally-strings/types'
-import { Card, Button } from '@rally-strings/ui'
+import { StringerOnboardingData } from '@stringr/types'
+import { Card, Button } from '@stringr/ui'
 import { Edit, Check } from 'lucide-react'
 import { calculateProfileCompleteness, getCompletenessMessage, getCompletionColor } from '@/lib/utils/profile-completeness'
-import { formatPrice } from '@rally-strings/ui'
+import { formatPrice } from '@stringr/ui'
 
 interface Step7ReviewProps {
   getValues: UseFormGetValues<StringerOnboardingData>

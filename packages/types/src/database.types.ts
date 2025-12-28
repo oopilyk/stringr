@@ -89,6 +89,7 @@ export type Database = {
           profile_complete: boolean | null
           profile_completion_percentage: number | null
           rackets_strung_count: number | null
+          role: Database["public"]["Enums"]["user_role"] | null
           stringing_location: string | null
           updated_at: string | null
           years_experience: number | null
@@ -108,6 +109,7 @@ export type Database = {
           profile_complete?: boolean | null
           profile_completion_percentage?: number | null
           rackets_strung_count?: number | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           stringing_location?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -127,11 +129,62 @@ export type Database = {
           profile_complete?: boolean | null
           profile_completion_percentage?: number | null
           rackets_strung_count?: number | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           stringing_location?: string | null
           updated_at?: string | null
           years_experience?: number | null
         }
         Relationships: []
+      }
+      racket_gallery: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          racquet_brand: string | null
+          racquet_model: string | null
+          string_used: string | null
+          stringer_id: string
+          tension_lbs: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          racquet_brand?: string | null
+          racquet_model?: string | null
+          string_used?: string | null
+          stringer_id: string
+          tension_lbs?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          racquet_brand?: string | null
+          racquet_model?: string | null
+          string_used?: string | null
+          stringer_id?: string
+          tension_lbs?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "racket_gallery_stringer_id_fkey"
+            columns: ["stringer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       requests: {
         Row: {
@@ -400,6 +453,7 @@ export type Database = {
         | "ready"
         | "completed"
         | "canceled"
+      user_role: "player" | "stringer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1060,6 +1114,7 @@ export const Constants = {
         "completed",
         "canceled",
       ],
+      user_role: ["player", "stringer"],
     },
   },
   storage: {

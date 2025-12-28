@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@rally-strings/ui'
+import { Button } from '@stringr/ui'
 import { Camera, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
 
@@ -126,6 +126,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
             width={size}
             height={size}
             className="rounded-full object-cover border-4 border-gray-200"
+            style={{ objectPosition: 'center', aspectRatio: '1/1' }}
           />
         ) : (
           <div

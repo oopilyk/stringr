@@ -10,8 +10,9 @@ import { ProfileHeader } from '@/components/profile/profile-header'
 import { ProfileStats } from '@/components/profile/profile-stats'
 import { InfoSectionCard } from '@/components/profile/info-section-card'
 import { InlineEditField } from '@/components/profile/inline-edit-field'
-import { Phone, Mail, MapPin, Briefcase, Wrench, DollarSign, Package, Calendar } from 'lucide-react'
-import { formatPrice } from '@rally-strings/ui'
+import { RacketGallery } from '@/components/profile/racket-gallery'
+import { Phone, Mail, MapPin, Briefcase, Wrench, DollarSign, Package, Calendar, Image as ImageIcon } from 'lucide-react'
+import { formatPrice } from '@stringr/ui'
 
 export default function MyProfilePage() {
   const { profile, isLoading: authLoading } = useAuth()
@@ -376,6 +377,15 @@ export default function MyProfilePage() {
                   <dd className="font-medium text-gray-900">{settings.max_daily_jobs || '—'}</dd>
                 </div>
               </dl>
+            </InfoSectionCard>
+
+            {/* Racket Gallery */}
+            <InfoSectionCard
+              title="Racket Gallery"
+              icon={<ImageIcon className="w-5 h-5 text-primary" />}
+              defaultOpen={true}
+            >
+              <RacketGallery stringerId={profile.id} isOwnProfile={true} />
             </InfoSectionCard>
           </>
         )}

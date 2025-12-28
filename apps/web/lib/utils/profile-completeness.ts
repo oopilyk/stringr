@@ -1,4 +1,4 @@
-import { StringerOnboardingData } from '@rally-strings/types'
+import { StringerOnboardingData } from '@stringr/types'
 
 export function calculateProfileCompleteness(data: StringerOnboardingData): number {
   let score = 0

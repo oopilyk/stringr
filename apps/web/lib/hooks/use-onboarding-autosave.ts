@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData } from '@rally-strings/types'
+import { StringerOnboardingData } from '@stringr/types'
 import { saveOnboardingProgress, getOnboardingProgress, clearOnboardingProgress } from '@/lib/utils/onboarding-storage'
 import { createClient } from '@/lib/supabase'
 

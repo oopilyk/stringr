@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardDescription,
   Button,
-} from '@rally-strings/ui'
+} from '@stringr/ui'
 import { Save, CreditCard, Lock, User } from 'lucide-react'
 
 export default function SettingsPage() {

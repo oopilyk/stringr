@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
-import { StringerCard } from '@rally-strings/ui'
-import { Button } from '@rally-strings/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rally-strings/ui'
+import { StringerCard } from '@stringr/ui'
+import { Button } from '@stringr/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
 import { MapPin, Search, Filter, UserPlus } from 'lucide-react'
-import type { StringerSearchResult, SearchStringersParams } from '@rally-strings/types'
-import { CreateRequestDialog } from '@/components/requests/create-request-dialog'
+import type { StringerSearchResult, SearchStringersParams } from '@stringr/types'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
 
@@ -226,16 +225,19 @@ function toRadians(degrees: number): number {
   return degrees * (Math.PI / 180)
 }
 
-export function DiscoverPage() {
+interface DiscoverPageProps {
+  isAuthenticated?: boolean
+}
+
+export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
   const { profile } = useAuth()
-  const [selectedStringer, setSelectedStringer] = useState<StringerSearchResult | null>(null)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [searchParams, setSearchParams] = useState<SearchStringersParams>({
     lat: 39.2904, // Default to Baltimore
     lng: -76.6122,
     radius_km: 25
   })
-  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false)
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false)
 
   const supabase = createClient()
 
@@ -260,73 +262,163 @@ export function DiscoverPage() {
     }
   }, [])
 
-  // Fetch stringers from API with fallback to sample data
+  // Fetch stringers from database with fallback to sample data
   const { data: stringers = [], isLoading, error } = useQuery({
-    queryKey: ['stringers', searchParams],
+    queryKey: ['stringers', searchParams, profile?.id, profile?.full_name],
     queryFn: async () => {
-      console.log('Using sample data for demo purposes')
-      const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
-      
-      // Calculate distances and apply filters for sample data
-      const processedData = sampleData.map(stringer => ({
-        ...stringer,
-        distance_km: calculateDistance(
-          searchParams.lat, 
-          searchParams.lng, 
-          stringer.lat!, 
-          stringer.lng!
-        )
-      })).filter(stringer => {
-        // Apply the same filters as the backend would
-        if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
-        if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
-        if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
-        if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
-        return true
-      }).sort((a, b) => a.distance_km! - b.distance_km!)
+      try {
+        console.log('Fetching stringers from database...')
+        console.log('Current profile:', profile?.full_name, 'ID:', profile?.id)
 
-      console.log('Processed sample data:', processedData.length, 'stringers')
-      return processedData
+        // Fetch stringers from database
+        // Only fetch profiles that have completed stringer onboarding
+        const { data: dbStringers, error: dbError } = await supabase
+          .from('stringer_settings')
+          .select(`
+            *,
+            profiles!inner (*)
+          `)
+          .not('onboarding_completed_at', 'is', null)
+
+        if (dbError) {
+          console.error('Database error:', dbError)
+          throw dbError
+        }
+
+        console.log('Fetched from database:', dbStringers?.length || 0, 'stringers')
+        console.log('Database stringers:', dbStringers?.map(s => {
+          const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
+          return profile?.full_name
+        }))
+
+        // Get sample data for fallback
+        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
+
+        // Combine database stringers with sample data
+        const allStringers = [
+          // Map database stringers to StringerSearchResult format
+          ...(dbStringers || []).map(settings => {
+            const profile = Array.isArray(settings.profiles) ? settings.profiles[0] : settings.profiles
+            return {
+              ...profile,
+              stringer_settings: {
+                id: settings.id,
+                base_price_cents: settings.base_price_cents,
+                turnaround_hours: settings.turnaround_hours,
+                accepts_rush: settings.accepts_rush,
+                rush_fee_cents: settings.rush_fee_cents,
+                max_daily_jobs: settings.max_daily_jobs,
+                services: settings.services,
+                string_inventory: settings.string_inventory,
+                availability: settings.availability
+              },
+              rating: {
+                stringer_id: profile.id,
+                avg_rating: 0, // No rating for new users
+                review_count: 0
+              }
+            }
+          }),
+          // Add sample data
+          ...sampleData
+        ]
+
+        // Calculate distances and apply filters
+        const processedData = allStringers
+          .map(stringer => ({
+            ...stringer,
+            distance_km: stringer.lat && stringer.lng ? calculateDistance(
+              searchParams.lat,
+              searchParams.lng,
+              stringer.lat,
+              stringer.lng
+            ) : 999 // Put stringers without location at the end
+          }))
+          .filter(stringer => {
+            // Must have stringer_settings to be shown
+            if (!stringer.stringer_settings) return false
+
+            // Exclude the current user from results
+            if (profile) {
+              // Match by ID (for real users from database)
+              if (stringer.id === profile.id) {
+                console.log('Filtering out by ID:', stringer.full_name)
+                return false
+              }
+              // Match by full name (for demo data)
+              if (stringer.full_name && profile.full_name &&
+                  stringer.full_name.toLowerCase() === profile.full_name.toLowerCase()) {
+                console.log('Filtering out by name:', stringer.full_name, 'matches', profile.full_name)
+                return false
+              }
+            }
+
+            // Apply search filters
+            // Only show stringers with valid location data
+            if (!stringer.lat || !stringer.lng || stringer.distance_km! >= 999) return false
+            // Apply radius filter
+            if (searchParams.radius_km && stringer.distance_km! > searchParams.radius_km) return false
+            if (searchParams.min_rating && (!stringer.rating?.avg_rating || stringer.rating.avg_rating < searchParams.min_rating)) return false
+            if (searchParams.max_price_cents && stringer.stringer_settings.base_price_cents > searchParams.max_price_cents) return false
+            if (searchParams.accepts_rush && !stringer.stringer_settings.accepts_rush) return false
+            return true
+          })
+          .sort((a, b) => a.distance_km! - b.distance_km!)
+
+        console.log('Processed data:', processedData.length, 'stringers')
+        console.log('Final stringer names:', processedData.map(s => `${s.full_name} (${s.distance_km?.toFixed(1)}km)`))
+        return processedData
+      } catch (error) {
+        console.error('Error fetching stringers, falling back to sample data:', error)
+        // Fallback to sample data only
+        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
+        return sampleData.map(stringer => ({
+          ...stringer,
+          distance_km: calculateDistance(
+            searchParams.lat,
+            searchParams.lng,
+            stringer.lat!,
+            stringer.lng!
+          )
+        })).sort((a, b) => a.distance_km! - b.distance_km!)
+      }
     },
     enabled: !!searchParams.lat && !!searchParams.lng,
   })
 
-  const handleStringerSelect = (stringer: StringerSearchResult) => {
-    setSelectedStringer(stringer)
-    setIsRequestDialogOpen(true)
-  }
-
-  if (!profile) {
-    return <div>Loading...</div>
+  const handleViewProfile = (stringer: StringerSearchResult) => {
+    if (!isAuthenticated) {
+      setShowSignInPrompt(true)
+      return
+    }
+    window.location.href = `/stringer/${stringer.id}`
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Discover Stringers</h1>
-              <p className="mt-2 text-gray-600">
-                Find local tennis stringers near you
-              </p>
-            </div>
-            
-            {/* Show "Provide Services" for all users */}
-            <div className="text-right">
-              <Button
-                onClick={() => window.location.href = '/my-profile'}
-                variant="outline"
-                className="bg-primary/5 border-primary/20 hover:bg-primary/10"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Provide Services
-              </Button>
-              <p className="text-xs text-gray-500 mt-1">List your services</p>
-            </div>
+        {/* Page header */}
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Discover Stringers</h1>
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
+              Find professional tennis stringers near you
+            </p>
           </div>
+
+          {isAuthenticated && (
+            <Button
+              onClick={() => window.location.href = '/my-profile'}
+              className="bg-primary hover:bg-primary/90 whitespace-nowrap"
+              size="sm"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Provide Services</span>
+              <span className="sm:hidden">Provide</span>
+            </Button>
+          )}
         </div>
 
         {/* Search and Filters */}
@@ -470,24 +562,54 @@ export function DiscoverPage() {
               <StringerCard
                 key={stringer.id}
                 stringer={stringer}
-                onSelect={handleStringerSelect}
+                onViewProfile={handleViewProfile}
               />
             ))}
           </div>
         )}
       </main>
 
-      {/* Create Request Dialog */}
-      {selectedStringer && (
-        <CreateRequestDialog
-          stringer={selectedStringer}
-          isOpen={isRequestDialogOpen}
-          onOpenChange={setIsRequestDialogOpen}
-          onSuccess={() => {
-            setIsRequestDialogOpen(false)
-            setSelectedStringer(null)
-          }}
-        />
+      {/* Sign In Prompt Modal */}
+      {showSignInPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-2xl">Sign in required</CardTitle>
+              <CardDescription>
+                Please sign in to view stringer profiles
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Create an account or sign in to connect with local stringers and manage your bookings.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    className="w-full h-12"
+                    onClick={() => window.location.href = '/auth/signup'}
+                  >
+                    Create Account
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12"
+                    onClick={() => window.location.href = '/auth/login'}
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowSignInPrompt(false)}
+                  >
+                    Continue Browsing
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )

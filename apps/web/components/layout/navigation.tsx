@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { Button } from '@rally-strings/ui'
+import { Button } from '@stringr/ui'
 import { Home, MessageSquare, Calendar, Settings, LogOut, Menu, X, UserPlus, User } from 'lucide-react'
 
 export function Navigation() {
@@ -20,20 +20,25 @@ export function Navigation() {
   }
 
   const getNavigationItems = () => {
+    if (!profile) {
+      // Unauthenticated users only see Discover
+      return [
+        { href: '/discover', label: 'Discover', icon: Home }
+      ]
+    }
+
     const baseItems = [
-      { href: '/', label: 'Discover', icon: Home },
+      { href: '/discover', label: 'Discover', icon: Home },
       { href: '/dashboard', label: 'Dashboard', icon: Calendar },
       { href: '/messages', label: 'Messages', icon: MessageSquare },
     ]
 
     // Add profile management for all users
-    if (profile) {
-      baseItems.push({ 
-        href: '/my-profile', 
-        label: 'My Profile', 
-        icon: User 
-      })
-    }
+    baseItems.push({
+      href: '/my-profile',
+      label: 'My Profile',
+      icon: User
+    })
 
     // Add general settings last
     baseItems.push({ href: '/settings', label: 'Settings', icon: Settings })
@@ -44,27 +49,27 @@ export function Navigation() {
   const navigationItems = getNavigationItems()
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg overflow-hidden">
-              <img 
-                src="/logo.png" 
-                alt="RallyStrings logo" 
-                className="w-full h-full object-cover" 
-              />
-            </div>
-            <span className="text-xl font-bold text-gray-900">Stringr</span>
+    <nav className="relative z-50 bg-white/95 backdrop-blur-sm shadow-sm">
+      <div className="max-w-7xl mx-auto px-8 py-4">
+        <div className="flex justify-between items-center">
+          <Link href="/dashboard" className="flex items-center space-x-3">
+            <img
+              src="/logo.jpg"
+              alt="Stringr Logo"
+              width={48}
+              height={48}
+              className="rounded-full object-cover"
+            />
+            <span className="text-2xl font-bold text-primary">STRINGR</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-8 text-gray-700">
             {navigationItems.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center space-x-1 text-gray-700 hover:text-primary transition-colors"
+                className="flex items-center space-x-2 hover:text-primary transition-colors font-medium"
               >
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -74,26 +79,41 @@ export function Navigation() {
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
-            {profile && (
-              <div className="hidden md:flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary">
-                    {profile.full_name?.[0] || 'U'}
-                  </span>
+            {profile ? (
+              <>
+                <div className="hidden md:flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg font-semibold text-primary">
+                      {profile.full_name?.[0] || 'U'}
+                    </span>
+                  </div>
+                  <span className="font-medium text-gray-900">{profile.full_name || 'User'}</span>
                 </div>
-                <span className="text-sm text-gray-700">{profile.full_name || 'User'}</span>
+
+                <Button
+                  variant="outline"
+                  className="hidden md:flex border-primary text-primary hover:bg-primary/10"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <div className="hidden md:flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/auth/signin')}
+                >
+                  Log In
+                </Button>
+                <Button
+                  onClick={() => router.push('/auth/signup')}
+                >
+                  Sign Up
+                </Button>
               </div>
             )}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="hidden md:flex items-center space-x-1"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </Button>
 
             {/* Mobile menu button */}
             <Button
@@ -141,14 +161,32 @@ export function Navigation() {
                 </Link>
               ))}
 
-              <Button
-                variant="ghost"
-                onClick={handleSignOut}
-                className="w-full justify-start space-x-3 px-2"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Sign Out</span>
-              </Button>
+              {profile ? (
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className="w-full justify-start space-x-3 px-2"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Sign Out</span>
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/auth/signin')}
+                    className="w-full"
+                  >
+                    Log In
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/auth/signup')}
+                    className="w-full"
+                  >
+                    Sign Up
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

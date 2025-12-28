@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@rally-strings/ui", "@rally-strings/types"],
+  transpilePackages: ["@stringr/ui", "@stringr/types"],
   experimental: {
     serverActions: {
       allowedOrigins: ["localhost:3000", "*.localhost:3000"],

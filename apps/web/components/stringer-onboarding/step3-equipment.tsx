@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData, MACHINE_BRANDS, RACKET_TYPES } from '@rally-strings/types'
+import { StringerOnboardingData, MACHINE_BRANDS, RACKET_TYPES } from '@stringr/types'
 import { useState } from 'react'
 
 interface Step3EquipmentProps {

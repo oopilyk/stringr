@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
-import type { Profile } from '@rally-strings/types'
+import type { Profile } from '@stringr/types'
 import type { User } from '@supabase/supabase-js'
 
 export function useAuth() {

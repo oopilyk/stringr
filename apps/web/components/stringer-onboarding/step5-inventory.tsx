@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch, UseFormGetValues } from 'react-hook-form'
-import { StringerOnboardingData } from '@rally-strings/types'
+import { StringerOnboardingData } from '@stringr/types'
 import { StringInventoryManager } from './string-inventory-manager'
 
 interface Step5InventoryProps {

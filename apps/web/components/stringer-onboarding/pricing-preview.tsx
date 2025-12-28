@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPrice } from '@rally-strings/ui'
+import { formatPrice } from '@stringr/ui'
 
 interface PricingPreviewProps {
   basePrice: number // in cents

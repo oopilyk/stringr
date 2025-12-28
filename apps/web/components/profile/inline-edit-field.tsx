@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@rally-strings/ui'
+import { Button } from '@stringr/ui'
 import { Edit2, Check, X } from 'lucide-react'
 
 interface InlineEditFieldProps {

@@ -1,9 +1,9 @@
 'use client'
 
-import { Profile } from '@rally-strings/types'
+import { Profile } from '@stringr/types'
 import { AvatarUpload } from './avatar-upload'
 import { Star, MapPin, Edit } from 'lucide-react'
-import { Button } from '@rally-strings/ui'
+import { Button } from '@stringr/ui'
 import Link from 'next/link'
 
 interface ProfileHeaderProps {

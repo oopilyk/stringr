@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData } from '@rally-strings/types'
+import { StringerOnboardingData } from '@stringr/types'
 import { MapPin, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 
@@ -28,6 +28,26 @@ export function Step1Credentials({ register, errors, setValue, watch }: Step1Cre
   }
 
   const passwordStrength = getPasswordStrength(password || '')
+
+  // Forward geocode: city name -> lat/lng
+  const geocodeCity = async (cityName: string) => {
+    if (!cityName || cityName.length < 2) return
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`
+      )
+      const data = await response.json()
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0]
+        setValue('lat', parseFloat(lat))
+        setValue('lng', parseFloat(lon))
+        console.log(`Geocoded ${cityName} to ${lat}, ${lon}`)
+      }
+    } catch (error) {
+      console.error('Failed to geocode city:', error)
+    }
+  }
 
   const useCurrentLocation = () => {
     setLoadingLocation(true)
@@ -175,6 +195,7 @@ export function Step1Credentials({ register, errors, setValue, watch }: Step1Cre
               required: 'City is required',
               minLength: { value: 2, message: 'City must be at least 2 characters' },
             })}
+            onBlur={(e) => geocodeCity(e.target.value)}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
             placeholder="San Francisco"
           />
