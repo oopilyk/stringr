@@ -243,37 +243,259 @@ export const STRING_PRESETS = [
   'Babolat Xcel 16',
 ] as const;
 
+// Onboarding constants
+export const MACHINE_BRANDS = [
+  'Gamma',
+  'Babolat',
+  'Wilson',
+  'Prince',
+  'Tourna',
+  'Wise',
+  'Eagnas',
+  'Alpha',
+  'Other',
+] as const;
+
+export const PLAYER_LEVELS = [
+  'Beginner',
+  'Intermediate',
+  'Advanced',
+  'Tournament',
+  'Professional',
+] as const;
+
+export const RACKET_TYPES = [
+  'Tennis',
+  'Badminton',
+  'Squash',
+  'Racquetball',
+] as const;
+
+export const CERTIFICATIONS = [
+  'USRSA Certified Stringer',
+  'ERSA Certified',
+  'Master Racquet Technician (MRT)',
+  'Self-taught',
+  'Manufacturer training',
+  'Other',
+] as const;
+
+export const STRINGING_LOCATIONS = [
+  'Home shop',
+  'Tennis club',
+  'Sports facility',
+  'Mobile service',
+  'Retail store',
+  'Other',
+] as const;
+
+// String inventory types
+export interface StringInventoryItem {
+  id?: string; // UUID for frontend management
+  brand: string;
+  model: string;
+  gauge: string; // e.g., "16", "17", "16L"
+  quantity: number;
+  price_cents: number;
+}
+
+export const StringInventoryItemSchema = z.object({
+  id: z.string().uuid().optional(),
+  brand: z.string().min(1, "Brand is required"),
+  model: z.string().min(1, "Model is required"),
+  gauge: z.string().min(1, "Gauge is required"),
+  quantity: z.number().int().min(0, "Quantity must be 0 or more"),
+  price_cents: z.number().int().min(0, "Price must be positive"),
+});
+
+// Dropoff method configuration
+export interface DropoffMethodConfig {
+  method: DropoffMethod;
+  enabled: boolean;
+  details?: string; // Optional details like pickup radius, shipping instructions
+}
+
+export const DropoffMethodConfigSchema = z.object({
+  method: DropoffMethodSchema,
+  enabled: z.boolean(),
+  details: z.string().optional(),
+});
+
+// Extended profile with stringer fields
+export interface StringerProfile extends Profile {
+  years_experience?: number;
+  rackets_strung_count?: number;
+  certifications?: string[];
+  stringing_location?: string;
+  player_levels_served?: string[];
+  profile_complete?: boolean;
+  profile_completion_percentage?: number;
+}
+
+export const StringerProfileSchema = ProfileSchema.extend({
+  years_experience: z.number().int().min(0).max(50).optional(),
+  rackets_strung_count: z.number().int().min(0).optional(),
+  certifications: z.array(z.string()).optional(),
+  stringing_location: z.string().optional(),
+  player_levels_served: z.array(z.string()).optional(),
+  profile_complete: z.boolean().optional(),
+  profile_completion_percentage: z.number().int().min(0).max(100).optional(),
+});
+
+// Extended stringer settings with new fields
+export interface ExtendedStringerSettings extends StringerSettings {
+  machine_brand?: string;
+  machine_model?: string;
+  machine_type?: 'drop-weight' | 'electronic' | 'crank';
+  supported_racket_types?: string[];
+  max_tension?: number;
+  string_inventory?: StringInventoryItem[];
+  dropoff_methods?: DropoffMethodConfig[];
+  pricing_notes?: string;
+  accepts_player_strings?: boolean;
+  discount_bulk_jobs?: number;
+  onboarding_step?: number;
+  onboarding_completed_at?: string;
+}
+
+export const ExtendedStringerSettingsSchema = StringerSettingsSchema.extend({
+  machine_brand: z.string().min(1).optional(),
+  machine_model: z.string().min(1).optional(),
+  machine_type: z.enum(['drop-weight', 'electronic', 'crank']).optional(),
+  supported_racket_types: z.array(z.string()).min(1, "Select at least one racket type").optional(),
+  max_tension: z.number().int().min(40).max(100).optional(),
+  string_inventory: z.array(StringInventoryItemSchema).optional(),
+  dropoff_methods: z.array(DropoffMethodConfigSchema).optional(),
+  pricing_notes: z.string().max(500).optional(),
+  accepts_player_strings: z.boolean().optional(),
+  discount_bulk_jobs: z.number().int().min(0).max(50).optional(),
+  onboarding_step: z.number().int().min(1).max(7).optional(),
+  onboarding_completed_at: z.string().optional(),
+});
+
+// Onboarding form data (all 7 steps combined)
+export interface StringerOnboardingData {
+  // Step 1: Credentials & Location
+  email: string;
+  password: string;
+  full_name: string;
+  phone: string;
+  city: string;
+  lat?: number;
+  lng?: number;
+
+  // Step 2: Background & Experience
+  years_experience?: number;
+  rackets_strung_count?: number;
+  certifications?: string[];
+  stringing_location?: string;
+  player_levels_served?: string[];
+  bio?: string;
+
+  // Step 3: Equipment & Capabilities
+  machine_brand?: string;
+  machine_model?: string;
+  machine_type?: 'drop-weight' | 'electronic' | 'crank';
+  supported_racket_types?: string[];
+  max_tension?: number;
+
+  // Step 4: Pricing & Turnaround
+  base_price_cents: number;
+  turnaround_hours: number;
+  accepts_rush: boolean;
+  rush_fee_cents: number;
+  pricing_notes?: string;
+  discount_bulk_jobs?: number;
+
+  // Step 5: String Inventory
+  string_inventory?: StringInventoryItem[];
+  accepts_player_strings?: boolean;
+
+  // Step 6: Availability & Preferences
+  dropoff_methods?: DropoffMethodConfig[];
+  availability?: AvailabilityBlock[];
+  max_daily_jobs: number;
+}
+
+// Step-specific schemas for validation
+export const Step1Schema = z.object({
+  email: z.string().email("Valid email required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  full_name: z.string().min(2, "Name is required"),
+  phone: z.string().min(10, "Valid phone number required"),
+  city: z.string().min(2, "City is required"),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+});
+
+export const Step2Schema = z.object({
+  years_experience: z.number().int().min(0).max(50).optional(),
+  rackets_strung_count: z.number().int().min(0).optional(),
+  certifications: z.array(z.string()).optional(),
+  stringing_location: z.string().optional(),
+  player_levels_served: z.array(z.string()).optional(),
+  bio: z.string().max(1000).optional(),
+});
+
+export const Step3Schema = z.object({
+  machine_brand: z.string().optional(),
+  machine_model: z.string().optional(),
+  machine_type: z.enum(['drop-weight', 'electronic', 'crank']).optional(),
+  supported_racket_types: z.array(z.string()).optional(),
+  max_tension: z.number().int().min(40).max(100).optional(),
+});
+
+export const Step4Schema = z.object({
+  base_price_cents: z.number().int().min(1000, "Minimum $10").max(10000, "Maximum $100"),
+  turnaround_hours: z.number().int().min(1),
+  accepts_rush: z.boolean(),
+  rush_fee_cents: z.number().int().min(0).max(5000),
+  pricing_notes: z.string().max(500).optional(),
+  discount_bulk_jobs: z.number().int().min(0).max(50).optional(),
+});
+
+export const Step5Schema = z.object({
+  string_inventory: z.array(StringInventoryItemSchema).optional(),
+  accepts_player_strings: z.boolean(),
+});
+
+export const Step6Schema = z.object({
+  dropoff_methods: z.array(DropoffMethodConfigSchema).min(1, "Select at least one dropoff method"),
+  availability: z.array(AvailabilityBlockSchema).optional(),
+  max_daily_jobs: z.number().int().min(1).max(50),
+});
+
 // Error types
-export class RallyStringsError extends Error {
+export class StringrError extends Error {
   constructor(
     message: string,
     public code: string,
     public statusCode: number = 400
   ) {
     super(message);
-    this.name = 'RallyStringsError';
+    this.name = 'StringrError';
   }
 }
 
-export class ValidationError extends RallyStringsError {
+export class ValidationError extends StringrError {
   constructor(message: string) {
     super(message, 'VALIDATION_ERROR', 400);
   }
 }
 
-export class NotFoundError extends RallyStringsError {
+export class NotFoundError extends StringrError {
   constructor(resource: string) {
     super(`${resource} not found`, 'NOT_FOUND', 404);
   }
 }
 
-export class UnauthorizedError extends RallyStringsError {
+export class UnauthorizedError extends StringrError {
   constructor(message: string = 'Unauthorized') {
     super(message, 'UNAUTHORIZED', 401);
   }
 }
 
-export class ConflictError extends RallyStringsError {
+export class ConflictError extends StringrError {
   constructor(message: string) {
     super(message, 'CONFLICT', 409);
   }

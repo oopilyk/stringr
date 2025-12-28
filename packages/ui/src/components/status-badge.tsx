@@ -1,5 +1,5 @@
 import { cn, getStatusColor, formatStatusText } from "../lib/utils"
-import type { RequestStatus } from "@rally-strings/types"
+import type { RequestStatus } from "@stringr/types"
 
 interface StatusBadgeProps {
   status: RequestStatus

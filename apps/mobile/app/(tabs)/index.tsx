@@ -3,10 +3,10 @@ import { View, Text, StyleSheet } from 'react-native'
 export default function DiscoverScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>RallyStrings</Text>
+      <Text style={styles.title}>Stringr</Text>
       <Text style={styles.subtitle}>Discover Local Tennis Stringers</Text>
       <Text style={styles.description}>
-        Welcome to RallyStrings! This mobile app mirrors the functionality of the web app.
+        Welcome to Stringr! This mobile app mirrors the functionality of the web app.
         Find local tennis stringers, create restring requests, and manage your tennis equipment needs.
       </Text>
     </View>

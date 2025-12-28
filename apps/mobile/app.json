@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Stringr",
-    "slug": "rally-strings",
+    "slug": "stringr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,19 +17,19 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rallystrings.app"
+      "bundleIdentifier": "com.stringr.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.rallystrings.app"
+      "package": "com.stringr.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "rally-strings",
+    "scheme": "stringr",
     "platforms": ["ios", "android", "web"],
     "plugins": [
       "expo-router",
@@ -43,7 +43,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow RallyStrings to use your location to find nearby stringers."
+          "locationAlwaysAndWhenInUsePermission": "Allow Stringr to use your location to find nearby stringers."
         }
       ]
     ]

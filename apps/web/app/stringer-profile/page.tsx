@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { Button } from '@rally-strings/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rally-strings/ui'
+import { Button } from '@stringr/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
 import { useForm } from 'react-hook-form'
 import { Navigation } from '@/components/layout/navigation'
 import { MapPin, Save, Plus, Trash2, DollarSign, Clock, Star, EyeOff, AlertTriangle } from 'lucide-react'
-import type { StringerSettings } from '@rally-strings/types'
+import type { StringerSettings } from '@stringr/types'
 
 interface StringerProfileForm {
   // Profile data

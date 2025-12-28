@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
-import type { Profile } from '@rally-strings/types'
+import type { Profile } from '@stringr/types'
 import type { User } from '@supabase/supabase-js'
 
 export function useAuth() {
@@ -32,11 +32,12 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [supabase.auth])
 
+  // Query profile data from database
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null
-      
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -44,34 +45,13 @@ export function useAuth() {
         .single()
 
       if (error) {
-        // If profile doesn't exist, create a default one
-        console.log('Profile not found, creating default profile')
-        const defaultProfile = {
-          id: user.id,
-          full_name: user.email?.split('@')[0] || 'Demo User',
-          role: 'player', // Default role
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        
-        // Try to create the profile in the database
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .upsert(defaultProfile)
-          .select()
-          .single()
-        
-        if (createError) {
-          console.log('Could not create profile, using default:', createError.message)
-          return defaultProfile as Profile
-        }
-        
-        return newProfile as Profile
+        console.error('Error loading profile:', error)
+        return null
       }
+
       return data as Profile
     },
-    enabled: !!user?.id,
-    retry: false, // Don't retry failed profile queries
+    enabled: !!user,
   })
 
   return {

@@ -59,17 +59,35 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // Protect all routes except auth pages
-  if (!session && !req.nextUrl.pathname.startsWith('/auth')) {
+  // List of public routes that don't require authentication
+  const publicRoutes = ['/auth', '/about', '/contact', '/pricing', '/discover']
+  const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route))
+
+  // Redirect unauthenticated users from root to signin page
+  if (!session && req.nextUrl.pathname === '/') {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/auth/signin'
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Redirect to dashboard if authenticated user visits auth pages
+  // Protect all routes except public pages
+  if (!session && !isPublicRoute) {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = '/auth/signin'
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // Redirect authenticated users from root to discover page
+  if (session && req.nextUrl.pathname === '/') {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = '/discover'
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // Redirect to discover if authenticated user visits auth pages
   if (session && req.nextUrl.pathname.startsWith('/auth')) {
     const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/'
+    redirectUrl.pathname = '/discover'
     return NextResponse.redirect(redirectUrl)
   }
 

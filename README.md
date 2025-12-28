@@ -1,4 +1,4 @@
-# Stringr
+# Stringr 🎾
 
 **Tennis racquet stringing marketplace - "Uber for stringing"**
 
@@ -17,7 +17,7 @@ Stringr connects local tennis stringers with players who need quick, affordable 
 
 ### Monorepo Structure
 ```
-rally-strings/
+stringr/
 ├── apps/
 │   ├── web/          # Next.js 14 web app
 │   └── mobile/       # Expo React Native app
@@ -59,7 +59,7 @@ rally-strings/
 
 ```bash
 git clone <repository-url>
-cd rally-strings
+cd stringr
 npm install
 ```
 

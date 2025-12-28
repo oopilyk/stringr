@@ -143,13 +143,18 @@ export default function MessagesPage() {
   const active = demoConversations.find((c) => c.id === activeId)!
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Keep the global header */}
+    <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      {/* Messages layout */}
-      <div className="flex flex-1 p-4 bg-gray-50">
-        <div className="flex flex-1 bg-white rounded-lg shadow overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
+          <p className="mt-2 text-gray-600">Chat with players and stringers</p>
+        </div>
+
+        {/* Messages layout */}
+        <div className="flex bg-white rounded-2xl shadow-lg overflow-hidden" style={{ height: 'calc(100vh - 240px)' }}>
           <MessagesSidebar
             conversations={demoConversations}
             onSelect={setActiveId}

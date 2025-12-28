@@ -13,8 +13,8 @@ import {
   DialogTitle,
   Button,
   formatPrice
-} from '@rally-strings/ui'
-import type { StringerSearchResult, CreateRequestFormData, RACQUET_PRESETS, STRING_PRESETS } from '@rally-strings/types'
+} from '@stringr/ui'
+import type { StringerSearchResult, CreateRequestFormData, RACQUET_PRESETS, STRING_PRESETS } from '@stringr/types'
 
 interface CreateRequestDialogProps {
   stringer: StringerSearchResult

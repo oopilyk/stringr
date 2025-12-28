@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@rally-strings/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rally-strings/ui'
+import { Button } from '@stringr/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
 import { useForm } from 'react-hook-form'
 import { UserCheck, UserPlus, Users, Zap } from 'lucide-react'
 
@@ -12,6 +12,7 @@ type UserRole = 'player' | 'stringer'
 
 interface SignupForm {
   email: string
+  password: string
   full_name: string
   role: UserRole
 }
@@ -44,19 +45,20 @@ export default function SignupPage() {
 
     try {
       if (data.role === 'stringer') {
-        // Redirect to full stringer signup
+        // Redirect to full stringer signup with data
         const params = new URLSearchParams({
           email: data.email,
+          password: data.password,
           full_name: data.full_name
         })
         router.push(`/auth/stringer-signup?${params.toString()}`)
         return
       }
 
-      // For players, create a simple account
+      // For players, create account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: 'temp_password_' + Math.random().toString(36).substring(7), // Temporary password
+        password: data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
@@ -85,7 +87,8 @@ export default function SignupPage() {
           return
         }
 
-        setMessage('Account created! Check your email to verify your account.')
+        // Sign in immediately after signup
+        router.push('/')
       }
     } catch (error) {
       setMessage('An unexpected error occurred')
@@ -107,7 +110,7 @@ export default function SignupPage() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Player Option */}
-            <Card 
+            <Card
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary/50"
               onClick={() => handleRoleSelect('player')}
             >
@@ -135,7 +138,7 @@ export default function SignupPage() {
             </Card>
 
             {/* Stringer Option */}
-            <Card 
+            <Card
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary/50"
               onClick={() => handleRoleSelect('stringer')}
             >
@@ -163,12 +166,19 @@ export default function SignupPage() {
             </Card>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/auth/signin')}
+              className="w-full max-w-xs mx-auto"
+            >
+              Back to Sign In
+            </Button>
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
               <button
                 onClick={() => router.push('/auth/signin')}
-                className="text-primary hover:underline"
+                className="text-primary hover:underline font-medium"
               >
                 Sign in
               </button>
@@ -194,9 +204,9 @@ export default function SignupPage() {
             Join as a {selectedRole === 'player' ? 'Player' : 'Stringer'}
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            {selectedRole === 'player' 
+            {selectedRole === 'player'
               ? 'Find local stringers and book your next restring'
-              : 'This will redirect you to our detailed stringer onboarding'
+              : 'Start earning by providing professional stringing services'
             }
           </p>
         </div>
@@ -205,9 +215,9 @@ export default function SignupPage() {
           <CardHeader>
             <CardTitle>Create your account</CardTitle>
             <CardDescription>
-              {selectedRole === 'player' 
+              {selectedRole === 'player'
                 ? 'Get started with finding stringers'
-                : 'Complete your business setup'
+                : 'Begin your stringer profile setup'
               }
             </CardDescription>
           </CardHeader>
@@ -222,6 +232,23 @@ export default function SignupPage() {
                   placeholder="Enter your email"
                 />
                 {errors.email && <p className="text-red-600 text-sm">{errors.email.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Password</label>
+                <input
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: {
+                      value: 6,
+                      message: 'Password must be at least 6 characters'
+                    }
+                  })}
+                  type="password"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  placeholder="Create a password"
+                />
+                {errors.password && <p className="text-red-600 text-sm">{errors.password.message}</p>}
               </div>
 
               <div>
@@ -249,7 +276,7 @@ export default function SignupPage() {
                   disabled={isLoading}
                   className="flex-1"
                 >
-                  {isLoading ? 'Creating...' : 
+                  {isLoading ? 'Creating...' :
                    selectedRole === 'player' ? 'Create Account' : 'Continue'
                   }
                 </Button>
