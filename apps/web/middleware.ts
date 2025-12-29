@@ -60,27 +60,13 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getSession()
 
   // List of public routes that don't require authentication
-  const publicRoutes = ['/auth', '/about', '/contact', '/pricing', '/discover']
+  const publicRoutes = ['/auth', '/about', '/contact', '/pricing', '/discover', '/']
   const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route))
-
-  // Redirect unauthenticated users from root to signin page
-  if (!session && req.nextUrl.pathname === '/') {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/auth/signin'
-    return NextResponse.redirect(redirectUrl)
-  }
 
   // Protect all routes except public pages
   if (!session && !isPublicRoute) {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/auth/signin'
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // Redirect authenticated users from root to discover page
-  if (session && req.nextUrl.pathname === '/') {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/discover'
     return NextResponse.redirect(redirectUrl)
   }
 
@@ -101,7 +87,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - Static assets (jpg, jpeg, png, gif, svg, ico, webp)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp)).*)',
   ],
 }

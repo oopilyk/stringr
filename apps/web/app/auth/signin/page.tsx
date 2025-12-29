@@ -114,7 +114,7 @@ export default function SignInPage() {
               variant="outline"
               size="sm"
               className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => router.push('/auth/login')}
+              onClick={() => setShowAuthModal(true)}
             >
               Log In
             </Button>
@@ -154,7 +154,7 @@ export default function SignInPage() {
           <Button
             variant="outline"
             className="border-primary text-primary hover:bg-primary/10"
-            onClick={() => router.push('/auth/login')}
+            onClick={() => setShowAuthModal(true)}
           >
             Log In
           </Button>
