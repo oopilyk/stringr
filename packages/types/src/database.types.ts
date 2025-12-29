@@ -89,7 +89,7 @@ export type Database = {
           profile_complete: boolean | null
           profile_completion_percentage: number | null
           rackets_strung_count: number | null
-          role: Database["public"]["Enums"]["user_role"] | null
+          role: string | null
           stringing_location: string | null
           updated_at: string | null
           years_experience: number | null
@@ -109,7 +109,7 @@ export type Database = {
           profile_complete?: boolean | null
           profile_completion_percentage?: number | null
           rackets_strung_count?: number | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: string | null
           stringing_location?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -129,7 +129,7 @@ export type Database = {
           profile_complete?: boolean | null
           profile_completion_percentage?: number | null
           rackets_strung_count?: number | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: string | null
           stringing_location?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -453,7 +453,6 @@ export type Database = {
         | "ready"
         | "completed"
         | "canceled"
-      user_role: "player" | "stringer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1114,7 +1113,6 @@ export const Constants = {
         "completed",
         "canceled",
       ],
-      user_role: ["player", "stringer"],
     },
   },
   storage: {
