@@ -13,6 +13,7 @@ import { InlineEditField } from '@/components/profile/inline-edit-field'
 import { RacketGallery } from '@/components/profile/racket-gallery'
 import { Phone, Mail, MapPin, Briefcase, Wrench, DollarSign, Package, Calendar, Image as ImageIcon } from 'lucide-react'
 import { formatPrice } from '@stringr/ui'
+import { ProfileUpdateSchema, validateData } from '@/lib/validation/schemas'
 
 export default function MyProfilePage() {
   const { profile, isLoading: authLoading } = useAuth()
@@ -71,15 +72,31 @@ export default function MyProfilePage() {
   }
 
   const handleInlineFieldSave = async (fieldName: string, value: string) => {
-    if (!profile?.id) {
-      console.error('No profile ID - not authenticated')
+    // SECURITY: Get user ID from server-side session, not client-provided profile
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      console.error('Not authenticated')
       throw new Error('Not authenticated')
+    }
+
+    // Validate that the profile being edited belongs to the authenticated user
+    if (profile?.id !== user.id) {
+      console.error('Unauthorized: Cannot edit another user\'s profile')
+      throw new Error('Unauthorized')
+    }
+
+    // SECURITY: Validate input data with Zod schema
+    const validationResult = validateData(ProfileUpdateSchema, { [fieldName]: value })
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error)
+      throw new Error(validationResult.error)
     }
 
     const { data, error } = await supabase
       .from('profiles')
-      .update({ [fieldName]: value })
-      .eq('id', profile.id)
+      .update(validationResult.data) // Use validated data
+      .eq('id', user.id) // Use server-validated user ID
       .select()
 
     if (error) {
@@ -88,7 +105,7 @@ export default function MyProfilePage() {
     }
 
     // Invalidate the profile query to refetch the updated data
-    await queryClient.invalidateQueries({ queryKey: ['profile', profile.id] })
+    await queryClient.invalidateQueries({ queryKey: ['profile', user.id] })
 
     setMessage(`${fieldName.replace('_', ' ')} updated successfully!`)
     setTimeout(() => setMessage(''), 3000)

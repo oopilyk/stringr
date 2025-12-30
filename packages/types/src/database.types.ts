@@ -58,13 +58,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "messages_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -89,7 +82,7 @@ export type Database = {
           profile_complete: boolean | null
           profile_completion_percentage: number | null
           rackets_strung_count: number | null
-          role: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
           stringing_location: string | null
           updated_at: string | null
           years_experience: number | null
@@ -109,7 +102,7 @@ export type Database = {
           profile_complete?: boolean | null
           profile_completion_percentage?: number | null
           rackets_strung_count?: number | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           stringing_location?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -129,7 +122,7 @@ export type Database = {
           profile_complete?: boolean | null
           profile_completion_percentage?: number | null
           rackets_strung_count?: number | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           stringing_location?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -188,78 +181,87 @@ export type Database = {
       }
       requests: {
         Row: {
-          address: string | null
+          accepted_at: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
           created_at: string | null
-          dropoff_method: Database["public"]["Enums"]["dropoff_method"] | null
+          decline_reason: string | null
+          declined_at: string | null
+          dropoff_method: Json
+          estimated_price_cents: number
+          final_price_cents: number | null
           id: string
-          lat: number | null
-          lng: number | null
-          notes: string | null
-          payment_status: Database["public"]["Enums"]["payment_status"]
           player_id: string
-          quoted_price_cents: number | null
-          racquet_brand: string | null
-          racquet_model: string | null
-          status: Database["public"]["Enums"]["request_status"]
-          string_pref: string | null
-          stringer_id: string | null
-          tension_lbs: number | null
+          preferred_completion_date: string | null
+          preferred_time_slot: Json | null
+          racket_photo_url: string
+          service_type: string
+          special_instructions: string | null
+          status: string
+          string_pattern: string
+          string_selection: Json
+          stringer_id: string
+          tension_crosses_lbs: number
+          tension_mains_lbs: number
           updated_at: string | null
+          viewed_at: string | null
         }
         Insert: {
-          address?: string | null
+          accepted_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
           created_at?: string | null
-          dropoff_method?: Database["public"]["Enums"]["dropoff_method"] | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          dropoff_method: Json
+          estimated_price_cents: number
+          final_price_cents?: number | null
           id?: string
-          lat?: number | null
-          lng?: number | null
-          notes?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
           player_id: string
-          quoted_price_cents?: number | null
-          racquet_brand?: string | null
-          racquet_model?: string | null
-          status?: Database["public"]["Enums"]["request_status"]
-          string_pref?: string | null
-          stringer_id?: string | null
-          tension_lbs?: number | null
+          preferred_completion_date?: string | null
+          preferred_time_slot?: Json | null
+          racket_photo_url: string
+          service_type: string
+          special_instructions?: string | null
+          status?: string
+          string_pattern: string
+          string_selection: Json
+          stringer_id: string
+          tension_crosses_lbs: number
+          tension_mains_lbs: number
           updated_at?: string | null
+          viewed_at?: string | null
         }
         Update: {
-          address?: string | null
+          accepted_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
           created_at?: string | null
-          dropoff_method?: Database["public"]["Enums"]["dropoff_method"] | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          dropoff_method?: Json
+          estimated_price_cents?: number
+          final_price_cents?: number | null
           id?: string
-          lat?: number | null
-          lng?: number | null
-          notes?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
           player_id?: string
-          quoted_price_cents?: number | null
-          racquet_brand?: string | null
-          racquet_model?: string | null
-          status?: Database["public"]["Enums"]["request_status"]
-          string_pref?: string | null
-          stringer_id?: string | null
-          tension_lbs?: number | null
+          preferred_completion_date?: string | null
+          preferred_time_slot?: Json | null
+          racket_photo_url?: string
+          service_type?: string
+          special_instructions?: string | null
+          status?: string
+          string_pattern?: string
+          string_selection?: Json
+          stringer_id?: string
+          tension_crosses_lbs?: number
+          tension_mains_lbs?: number
           updated_at?: string | null
+          viewed_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "requests_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "requests_stringer_id_fkey"
-            columns: ["stringer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       reviews: {
         Row: {
@@ -298,13 +300,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "reviews_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: true
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "reviews_stringer_id_fkey"
             columns: ["stringer_id"]
             isOneToOne: false
@@ -315,6 +310,7 @@ export type Database = {
       }
       stringer_settings: {
         Row: {
+          accepting_requests: boolean | null
           accepts_player_strings: boolean | null
           accepts_rush: boolean
           admin_notes: string | null
@@ -323,6 +319,7 @@ export type Database = {
           created_at: string | null
           discount_bulk_jobs: number | null
           dropoff_methods: Json | null
+          flexible_availability: boolean | null
           id: string
           is_verified: boolean | null
           machine_brand: string | null
@@ -345,6 +342,7 @@ export type Database = {
           verification_status: string | null
         }
         Insert: {
+          accepting_requests?: boolean | null
           accepts_player_strings?: boolean | null
           accepts_rush?: boolean
           admin_notes?: string | null
@@ -353,6 +351,7 @@ export type Database = {
           created_at?: string | null
           discount_bulk_jobs?: number | null
           dropoff_methods?: Json | null
+          flexible_availability?: boolean | null
           id: string
           is_verified?: boolean | null
           machine_brand?: string | null
@@ -375,6 +374,7 @@ export type Database = {
           verification_status?: string | null
         }
         Update: {
+          accepting_requests?: boolean | null
           accepts_player_strings?: boolean | null
           accepts_rush?: boolean
           admin_notes?: string | null
@@ -383,6 +383,7 @@ export type Database = {
           created_at?: string | null
           discount_bulk_jobs?: number | null
           dropoff_methods?: Json | null
+          flexible_availability?: boolean | null
           id?: string
           is_verified?: boolean | null
           machine_brand?: string | null
@@ -453,6 +454,7 @@ export type Database = {
         | "ready"
         | "completed"
         | "canceled"
+      user_role: "player" | "stringer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1113,6 +1115,7 @@ export const Constants = {
         "completed",
         "canceled",
       ],
+      user_role: ["player", "stringer"],
     },
   },
   storage: {

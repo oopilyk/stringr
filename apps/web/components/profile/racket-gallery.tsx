@@ -277,7 +277,7 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
                       <Textarea
                         id="caption"
                         value={caption}
-                        onChange={(e) => setCaption(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCaption(e.target.value)}
                         placeholder="Describe this stringing job..."
                         rows={3}
                       />
@@ -289,7 +289,7 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
                         <Input
                           id="brand"
                           value={racquetBrand}
-                          onChange={(e) => setRacquetBrand(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRacquetBrand(e.target.value)}
                           placeholder="e.g. Wilson"
                         />
                       </div>
@@ -298,7 +298,7 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
                         <Input
                           id="model"
                           value={racquetModel}
-                          onChange={(e) => setRacquetModel(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRacquetModel(e.target.value)}
                           placeholder="e.g. Pro Staff"
                         />
                       </div>
@@ -310,7 +310,7 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
                         <Input
                           id="string"
                           value={stringUsed}
-                          onChange={(e) => setStringUsed(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStringUsed(e.target.value)}
                           placeholder="e.g. RPM Blast"
                         />
                       </div>
@@ -323,7 +323,7 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
                           min="30"
                           max="80"
                           value={tension}
-                          onChange={(e) => setTension(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTension(e.target.value)}
                           placeholder="e.g. 55"
                         />
                       </div>

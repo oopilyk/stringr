@@ -84,7 +84,7 @@ export default function SignInPage() {
       if (error) {
         setMessage(`Error: ${error.message}`)
       } else {
-        router.push('/')
+        router.push('/discover')
       }
     } catch (error) {
       setMessage('An unexpected error occurred')
@@ -114,7 +114,7 @@ export default function SignInPage() {
               variant="outline"
               size="sm"
               className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => router.push('/auth/login')}
+              onClick={() => setShowAuthModal(true)}
             >
               Log In
             </Button>
@@ -154,7 +154,7 @@ export default function SignInPage() {
           <Button
             variant="outline"
             className="border-primary text-primary hover:bg-primary/10"
-            onClick={() => router.push('/auth/login')}
+            onClick={() => setShowAuthModal(true)}
           >
             Log In
           </Button>
@@ -309,10 +309,6 @@ export default function SignInPage() {
                     {message}
                   </div>
                 )}
-
-                <div className="pt-4 border-t">
-                  <p className="text-xs text-gray-600 mb-1">Demo: marco@example.com / password123</p>
-                </div>
               </form>
 
               <button

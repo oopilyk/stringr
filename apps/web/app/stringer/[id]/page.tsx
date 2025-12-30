@@ -325,7 +325,7 @@ export default function StringerProfileViewPage() {
                     {stringer.years_experience}+ years
                   </span>
                 )}
-                {stringer.certifications?.map((cert, i) => (
+                {stringer.certifications?.map((cert: string, i: number) => (
                   <span key={i} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                     <Check className="w-4 h-4 mr-1" />
                     {cert}
@@ -336,14 +336,15 @@ export default function StringerProfileViewPage() {
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button
-                  onClick={() => setIsRequestDialogOpen(true)}
+                  onClick={() => router.push(`/request/new?stringer_id=${params.id}`)}
                   className="flex-1 bg-primary hover:bg-primary/90"
                 >
-                  Request Stringing
+                  Request Service
                 </Button>
                 <Button
                   variant="outline"
                   className="border-2"
+                  onClick={() => router.push(`/messages?stringer_id=${params.id}`)}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Message

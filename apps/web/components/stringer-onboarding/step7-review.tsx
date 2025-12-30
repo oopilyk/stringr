@@ -205,7 +205,7 @@ export function Step7Review({ getValues, jumpToStep }: Step7ReviewProps) {
         </div>
         {data.string_inventory && data.string_inventory.length > 0 ? (
           <div className="space-y-2">
-            {data.string_inventory.map((item, idx) => (
+            {data.string_inventory.map((item: any, idx: number) => (
               <div key={idx} className="text-sm flex justify-between items-center py-1 border-b last:border-0">
                 <span className="font-medium">
                   {item.brand} {item.model} ({item.gauge})
@@ -244,7 +244,7 @@ export function Step7Review({ getValues, jumpToStep }: Step7ReviewProps) {
             <dt className="text-gray-500">Dropoff Methods</dt>
             <dd className="font-medium text-gray-900">
               {data.dropoff_methods && data.dropoff_methods.length > 0
-                ? data.dropoff_methods.map((m) => m.method).join(', ')
+                ? data.dropoff_methods.map((m: any) => m.method).join(', ')
                 : '—'}
             </dd>
           </div>

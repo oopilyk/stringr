@@ -81,7 +81,7 @@ export function StringInventoryManager({ inventory, onChange }: StringInventoryM
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Quick add popular strings:</label>
         <div className="flex flex-wrap gap-2">
-          {STRING_PRESETS.slice(0, 4).map((preset) => (
+          {STRING_PRESETS.slice(0, 4).map((preset: string) => (
             <Button key={preset} type="button" variant="outline" size="sm" onClick={() => quickAddPreset(preset)}>
               <Plus className="w-3 h-3 mr-1" />
               {preset}

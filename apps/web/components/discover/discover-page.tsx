@@ -6,207 +6,13 @@ import { createClient } from '@/lib/supabase'
 import { StringerCard } from '@stringr/ui'
 import { Button } from '@stringr/ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
-import { MapPin, Search, Filter, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import type { StringerSearchResult, SearchStringersParams } from '@stringr/types'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
+import { FilterBar } from './filter-bar'
+import { useSearchLocation } from '@/lib/contexts/search-location-context'
 
-// Create sample stringers based on user location
-function createSampleStringers(userLat: number, userLng: number): StringerSearchResult[] {
-  // Default to Baltimore if no location provided
-  const baseLat = userLat || 39.2904
-  const baseLng = userLng || -76.6122
-  
-  return [
-    {
-      id: '1',
-      full_name: 'Marco Rodriguez',
-      bio: 'Professional tennis stringer with 15+ years experience. Former college player and certified Master Racquet Technician.',
-      city: getLocalCity(baseLat, baseLng, 0),
-      lat: baseLat + 0.01,
-      lng: baseLng + 0.01,
-    stringer_settings: {
-      id: '1',
-      base_price_cents: 2500,
-      turnaround_hours: 24,
-      accepts_rush: true,
-      rush_fee_cents: 800,
-      max_daily_jobs: 8,
-      services: [
-        { name: 'Standard Restring', price_cents: 2500 },
-        { name: 'Premium String', price_cents: 3500 },
-        { name: 'Hybrid Setup', price_cents: 4000 }
-      ],
-      availability: []
-    },
-    rating: {
-      stringer_id: '1',
-      avg_rating: 4.8,
-      review_count: 127
-    },
-    distance_km: 2.3
-  },
-    {
-      id: '2',
-      full_name: 'Sarah Chen',
-      bio: 'Tennis coach and certified stringer specializing in high-performance strings. Quick turnaround and competitive pricing.',
-      city: getLocalCity(baseLat, baseLng, 1),
-      lat: baseLat + 0.05,
-      lng: baseLng - 0.03,
-    stringer_settings: {
-      id: '2',
-      base_price_cents: 3000,
-      turnaround_hours: 12,
-      accepts_rush: true,
-      rush_fee_cents: 1000,
-      max_daily_jobs: 6,
-      services: [
-        { name: 'Express Restring', price_cents: 3000 },
-        { name: 'Tournament Prep', price_cents: 4500 },
-        { name: 'String Consultation', price_cents: 5000 }
-      ],
-      availability: []
-    },
-    rating: {
-      stringer_id: '2',
-      avg_rating: 4.9,
-      review_count: 89
-    },
-    distance_km: 4.7
-  },
-    {
-      id: '3',
-      full_name: 'David Thompson',
-      bio: 'Budget-friendly stringing service. Great for recreational players. Available weekends and evenings.',
-      city: getLocalCity(baseLat, baseLng, 2),
-      lat: baseLat - 0.02,
-      lng: baseLng + 0.04,
-    stringer_settings: {
-      id: '3',
-      base_price_cents: 2000,
-      turnaround_hours: 48,
-      accepts_rush: false,
-      rush_fee_cents: 0,
-      max_daily_jobs: 4,
-      services: [
-        { name: 'Basic Restring', price_cents: 2000 },
-        { name: 'Synthetic Gut', price_cents: 2200 },
-        { name: 'Multifilament', price_cents: 2800 }
-      ],
-      availability: []
-    },
-    rating: {
-      stringer_id: '3',
-      avg_rating: 4.3,
-      review_count: 45
-    },
-    distance_km: 8.1
-  },
-    {
-      id: '4',
-      full_name: 'Alex Kim',
-      bio: 'Former touring pro with expertise in polyester and natural gut strings. Available for consultations.',
-      city: getLocalCity(baseLat, baseLng, 3),
-      lat: baseLat + 0.08,
-      lng: baseLng - 0.05,
-    stringer_settings: {
-      id: '4',
-      base_price_cents: 3500,
-      turnaround_hours: 18,
-      accepts_rush: true,
-      rush_fee_cents: 1200,
-      max_daily_jobs: 5,
-      services: [
-        { name: 'Pro Restring', price_cents: 3500 },
-        { name: 'Natural Gut Setup', price_cents: 5500 },
-        { name: 'Custom Tension', price_cents: 4000 }
-      ],
-      availability: []
-    },
-    rating: {
-      stringer_id: '4',
-      avg_rating: 4.7,
-      review_count: 63
-    },
-    distance_km: 12.5
-  },
-    {
-      id: '5',
-      full_name: 'Lisa Martinez',
-      bio: 'Mobile stringing service - I come to you! Specialized in junior and beginner setups.',
-      city: getLocalCity(baseLat, baseLng, 4),
-      lat: baseLat - 0.04,
-      lng: baseLng - 0.02,
-    stringer_settings: {
-      id: '5',
-      base_price_cents: 2800,
-      turnaround_hours: 6,
-      accepts_rush: true,
-      rush_fee_cents: 500,
-      max_daily_jobs: 10,
-      services: [
-        { name: 'Mobile Service', price_cents: 2800 },
-        { name: 'Junior Setup', price_cents: 2300 },
-        { name: 'Beginner Special', price_cents: 2000 }
-      ],
-      availability: []
-    },
-    rating: {
-      stringer_id: '5',
-      avg_rating: 4.6,
-      review_count: 92
-    },
-    distance_km: 15.2
-  },
-    {
-      id: '6',
-      full_name: 'Mike Johnson',
-      bio: 'Tennis shop owner with 20+ years experience. Full service including grip replacement and racquet maintenance.',
-      city: getLocalCity(baseLat, baseLng, 5),
-      lat: baseLat + 0.03,
-      lng: baseLng + 0.06,
-    stringer_settings: {
-      id: '6',
-      base_price_cents: 2700,
-      turnaround_hours: 36,
-      accepts_rush: true,
-      rush_fee_cents: 700,
-      max_daily_jobs: 12,
-      services: [
-        { name: 'Shop Service', price_cents: 2700 },
-        { name: 'Grip + String', price_cents: 3200 },
-        { name: 'Full Service', price_cents: 4500 }
-      ],
-      availability: []
-    },
-    rating: {
-      stringer_id: '6',
-      avg_rating: 4.5,
-      review_count: 156
-    },
-    distance_km: 5.9
-    }
-  ]
-}
-
-// Get local city names based on location
-function getLocalCity(lat: number, lng: number, index: number): string {
-  // Baltimore area (you can expand this for other cities)
-  if (lat > 39.0 && lat < 39.6 && lng > -77.0 && lng < -76.0) {
-    const baltimoreCities = ['Baltimore', 'Towson', 'Columbia', 'Annapolis', 'Rockville', 'Silver Spring']
-    return baltimoreCities[index] || 'Baltimore'
-  }
-  
-  // San Francisco Bay Area
-  if (lat > 37.0 && lat < 38.0 && lng > -123.0 && lng < -121.0) {
-    const bayCities = ['Palo Alto', 'Mountain View', 'Sunnyvale', 'Redwood City', 'San Mateo', 'Los Altos']
-    return bayCities[index] || 'San Francisco'
-  }
-  
-  // Default fallback
-  const defaultCities = ['Downtown', 'Midtown', 'Uptown', 'Eastside', 'Westside', 'Northside']
-  return defaultCities[index] || 'Local Area'
-}
 
 // Calculate distance using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -231,39 +37,79 @@ interface DiscoverPageProps {
 
 export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
   const { profile } = useAuth()
+  const { setSearchLocation } = useSearchLocation()
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationError, setLocationError] = useState(false)
   const [searchParams, setSearchParams] = useState<SearchStringersParams>({
-    lat: 39.2904, // Default to Baltimore
-    lng: -76.6122,
-    radius_km: 25
+    lat: 0,
+    lng: 0,
+    radius_km: 201.168 // 125 miles in km
   })
   const [showSignInPrompt, setShowSignInPrompt] = useState(false)
 
   const supabase = createClient()
 
-  // Get user's location
+  // Update search location whenever filter location changes
   useEffect(() => {
+    if (searchParams.lat && searchParams.lng) {
+      setSearchLocation({ lat: searchParams.lat, lng: searchParams.lng })
+    }
+  }, [searchParams.lat, searchParams.lng, setSearchLocation])
+
+  // Get user's location - try browser first, then fall back to profile
+  useEffect(() => {
+    // Try to get browser location first
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords
           setLocation({ lat: latitude, lng: longitude })
-          setSearchParams(prev => ({
+          setSearchParams((prev: SearchStringersParams) => ({
             ...prev,
             lat: latitude,
             lng: longitude
           }))
+          setLocationError(false)
         },
         (error) => {
-          console.log('Location access denied:', error)
-          // Use default location (Palo Alto)
+          console.log('Browser location access denied:', error)
+          // Fall back to profile location
+          if (profile?.lat != null && profile?.lng != null) {
+            const userLat = profile.lat
+            const userLng = profile.lng
+            setLocation({ lat: userLat, lng: userLng })
+            setSearchParams((prev: SearchStringersParams) => ({
+              ...prev,
+              lat: userLat,
+              lng: userLng
+            }))
+            setLocationError(false)
+          } else {
+            // No location available
+            setLocationError(true)
+          }
         }
       )
+    } else {
+      // Geolocation not supported, try profile location
+      if (profile?.lat != null && profile?.lng != null) {
+        const userLat = profile.lat
+        const userLng = profile.lng
+        setLocation({ lat: userLat, lng: userLng })
+        setSearchParams((prev: SearchStringersParams) => ({
+          ...prev,
+          lat: userLat,
+          lng: userLng
+        }))
+        setLocationError(false)
+      } else {
+        setLocationError(true)
+      }
     }
-  }, [])
+  }, [profile?.lat, profile?.lng])
 
   // Fetch stringers from database with fallback to sample data
-  const { data: stringers = [], isLoading, error } = useQuery({
+  const { data: stringers = [], isLoading } = useQuery({
     queryKey: ['stringers', searchParams, profile?.id, profile?.full_name],
     queryFn: async () => {
       try {
@@ -291,37 +137,29 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
           return profile?.full_name
         }))
 
-        // Get sample data for fallback
-        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
-
-        // Combine database stringers with sample data
-        const allStringers = [
-          // Map database stringers to StringerSearchResult format
-          ...(dbStringers || []).map(settings => {
-            const profile = Array.isArray(settings.profiles) ? settings.profiles[0] : settings.profiles
-            return {
-              ...profile,
-              stringer_settings: {
-                id: settings.id,
-                base_price_cents: settings.base_price_cents,
-                turnaround_hours: settings.turnaround_hours,
-                accepts_rush: settings.accepts_rush,
-                rush_fee_cents: settings.rush_fee_cents,
-                max_daily_jobs: settings.max_daily_jobs,
-                services: settings.services,
-                string_inventory: settings.string_inventory,
-                availability: settings.availability
-              },
-              rating: {
-                stringer_id: profile.id,
-                avg_rating: 0, // No rating for new users
-                review_count: 0
-              }
+        // Map database stringers to StringerSearchResult format
+        const allStringers = (dbStringers || []).map(settings => {
+          const profile = Array.isArray(settings.profiles) ? settings.profiles[0] : settings.profiles
+          return {
+            ...profile,
+            stringer_settings: {
+              id: settings.id,
+              base_price_cents: settings.base_price_cents,
+              turnaround_hours: settings.turnaround_hours,
+              accepts_rush: settings.accepts_rush,
+              rush_fee_cents: settings.rush_fee_cents,
+              max_daily_jobs: settings.max_daily_jobs,
+              services: settings.services,
+              string_inventory: settings.string_inventory,
+              availability: settings.availability
+            },
+            rating: {
+              stringer_id: profile.id,
+              avg_rating: 0, // TODO: Calculate from reviews table
+              review_count: 0
             }
-          }),
-          // Add sample data
-          ...sampleData
-        ]
+          }
+        })
 
         // Calculate distances and apply filters
         const processedData = allStringers
@@ -339,18 +177,9 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
             if (!stringer.stringer_settings) return false
 
             // Exclude the current user from results
-            if (profile) {
-              // Match by ID (for real users from database)
-              if (stringer.id === profile.id) {
-                console.log('Filtering out by ID:', stringer.full_name)
-                return false
-              }
-              // Match by full name (for demo data)
-              if (stringer.full_name && profile.full_name &&
-                  stringer.full_name.toLowerCase() === profile.full_name.toLowerCase()) {
-                console.log('Filtering out by name:', stringer.full_name, 'matches', profile.full_name)
-                return false
-              }
+            if (profile && stringer.id === profile.id) {
+              console.log('Filtering out current user:', stringer.full_name)
+              return false
             }
 
             // Apply search filters
@@ -368,19 +197,10 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
         console.log('Processed data:', processedData.length, 'stringers')
         console.log('Final stringer names:', processedData.map(s => `${s.full_name} (${s.distance_km?.toFixed(1)}km)`))
         return processedData
-      } catch (error) {
-        console.error('Error fetching stringers, falling back to sample data:', error)
-        // Fallback to sample data only
-        const sampleData = createSampleStringers(searchParams.lat, searchParams.lng)
-        return sampleData.map(stringer => ({
-          ...stringer,
-          distance_km: calculateDistance(
-            searchParams.lat,
-            searchParams.lng,
-            stringer.lat!,
-            stringer.lng!
-          )
-        })).sort((a, b) => a.distance_km! - b.distance_km!)
+      } catch (err) {
+        console.error('Error fetching stringers:', err)
+        // Return empty array on error - no fallback to fake data
+        return []
       }
     },
     enabled: !!searchParams.lat && !!searchParams.lng,
@@ -422,110 +242,54 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Search className="w-5 h-5" />
-              <span>Search & Filters</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Radius
-                </label>
-                <select
-                  value={searchParams.radius_km || 25}
-                  onChange={(e) => setSearchParams(prev => ({
-                    ...prev,
-                    radius_km: parseInt(e.target.value)
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value={5}>5 km</option>
-                  <option value={10}>10 km</option>
-                  <option value={25}>25 km</option>
-                  <option value={50}>50 km</option>
-                </select>
-              </div>
+        <div className="mb-8">
+          <FilterBar
+            searchParams={searchParams}
+            onSearchParamsChange={setSearchParams}
+            currentLocation={location}
+            onLocationChange={(lat, lng) => {
+              setLocation({ lat, lng })
+              setSearchParams((prev: SearchStringersParams) => ({ ...prev, lat, lng }))
+              setLocationError(false)
+            }}
+          />
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Price
-                </label>
-                <select
-                  value={searchParams.max_price_cents || ''}
-                  onChange={(e) => setSearchParams(prev => ({
-                    ...prev,
-                    max_price_cents: e.target.value ? parseInt(e.target.value) : undefined
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Any price</option>
-                  <option value={2000}>Under $20</option>
-                  <option value={2500}>Under $25</option>
-                  <option value={3000}>Under $30</option>
-                  <option value={4000}>Under $40</option>
-                </select>
+        {/* Location Error */}
+        {locationError && (
+          <Card className="mb-8 border-orange-200 bg-orange-50">
+            <CardContent className="py-8 text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 mx-auto text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Min Rating
-                </label>
-                <select
-                  value={searchParams.min_rating || ''}
-                  onChange={(e) => setSearchParams(prev => ({
-                    ...prev,
-                    min_rating: e.target.value ? parseFloat(e.target.value) : undefined
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Any rating</option>
-                  <option value={3}>3+ stars</option>
-                  <option value={4}>4+ stars</option>
-                  <option value={4.5}>4.5+ stars</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={searchParams.accepts_rush || false}
-                    onChange={(e) => setSearchParams(prev => ({
-                      ...prev,
-                      accepts_rush: e.target.checked || undefined
-                    }))}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Rush available</span>
-                </label>
-              </div>
-            </div>
-
-            {location && (
-              <div className="mt-4 flex items-center space-x-2 text-sm text-gray-600">
-                <MapPin className="w-4 h-4" />
-                <span>
-                  Searching near {location.lat.toFixed(3)}, {location.lng.toFixed(3)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Location Required
+              </h3>
+              <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                To find stringers near you, please enable location services in your browser or manually enter your location using the location filter above.
+              </p>
+              <p className="text-sm text-gray-500">
+                You can also add your location to your profile in settings.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Results */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-white rounded-lg h-64 border"></div>
+        {!locationError && (
+          <>
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-white rounded-lg h-64 border"></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : stringers.length === 0 ? (
+            ) : stringers.length === 0 ? (
           <div className="space-y-6">
             <Card>
               <CardContent className="text-center py-12">
@@ -566,6 +330,8 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
               />
             ))}
           </div>
+        )}
+          </>
         )}
       </main>
 

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { createBrowserClient } from '@supabase/ssr'
 import { useState } from 'react'
+import { SearchLocationProvider } from '@/lib/contexts/search-location-context'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -20,8 +21,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <SearchLocationProvider>
+        {children}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </SearchLocationProvider>
     </QueryClientProvider>
   )
 }

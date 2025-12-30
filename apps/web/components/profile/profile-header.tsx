@@ -2,9 +2,11 @@
 
 import { Profile } from '@stringr/types'
 import { AvatarUpload } from './avatar-upload'
-import { Star, MapPin, Edit } from 'lucide-react'
+import { Star, MapPin, Edit, LogOut } from 'lucide-react'
 import { Button } from '@stringr/ui'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
 
 interface ProfileHeaderProps {
   profile: Profile
@@ -21,6 +23,14 @@ export function ProfileHeader({
   isOwnProfile = false,
   onAvatarChange
 }: ProfileHeaderProps) {
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth/signin')
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
@@ -33,10 +43,18 @@ export function ProfileHeader({
             size={128}
           />
         ) : (
-          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-4 border-gray-200">
-            <span className="text-white text-4xl font-bold">
-              {(profile.full_name || profile.email)?.substring(0, 2).toUpperCase()}
-            </span>
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-4 border-gray-200 overflow-hidden">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name || 'User'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white text-4xl font-bold">
+                {(profile.full_name || profile.email)?.substring(0, 2).toUpperCase()}
+              </span>
+            )}
           </div>
         )}
 
@@ -81,6 +99,21 @@ export function ProfileHeader({
           )}
         </div>
       </div>
+
+      {/* Sign Out Button - Only shown for own profile */}
+      {isOwnProfile && (
+        <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="text-gray-600 hover:text-red-600 hover:bg-red-50"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

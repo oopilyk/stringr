@@ -89,7 +89,7 @@ export default function StringerSignupPage() {
   const { clearProgress } = useOnboardingAutosave({
     watch,
     currentStep,
-    userId,
+    userId: userId ?? undefined,
     debounceMs: 2000,
   })
 

@@ -5,19 +5,17 @@ import { createClient } from '@/lib/supabase'
 import { Button } from '@stringr/ui'
 import { Camera, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
-import { AvatarUploadSchema, validateData } from '@/lib/validation/schemas'
+import { RacketPhotoSchema, validateData } from '@/lib/validation/schemas'
 
-interface AvatarUploadProps {
-  userId: string
-  currentAvatarUrl?: string | null
+interface RacketPhotoUploadProps {
   onUploadComplete: (url: string) => void
-  size?: number
+  initialPhotoUrl?: string
 }
 
-export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size = 128 }: AvatarUploadProps) {
-  const [isUploading, setIsUploading] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+export function RacketPhotoUpload({ onUploadComplete, initialPhotoUrl }: RacketPhotoUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialPhotoUrl || null)
+  const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
@@ -27,7 +25,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
     if (!file) return
 
     // SECURITY: Validate file with Zod schema
-    const validationResult = validateData(AvatarUploadSchema, { file })
+    const validationResult = validateData(RacketPhotoSchema, { file })
     if (!validationResult.success) {
       setError(validationResult.error)
       return
@@ -59,34 +57,29 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
     setError(null)
 
     try {
-      // SECURITY: Re-validate file before upload (defense in depth)
-      const validationResult = validateData(AvatarUploadSchema, { file: selectedFile })
+      // SECURITY: Re-validate file before upload
+      const validationResult = validateData(RacketPhotoSchema, { file: selectedFile })
       if (!validationResult.success) {
         throw new Error(validationResult.error)
       }
 
-      // SECURITY: Verify user is authenticated and get server-side user ID
+      // SECURITY: Verify user is authenticated
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         throw new Error('Not authenticated')
       }
 
-      // SECURITY: Ensure user can only upload to their own folder
-      if (userId !== user.id) {
-        throw new Error('Unauthorized')
-      }
-
-      // Generate unique filename with timestamp to prevent caching issues
+      // Generate unique filename with timestamp
       const fileExt = selectedFile.name.split('.').pop()
       const timestamp = Date.now()
-      const fileName = `${user.id}/avatar-${timestamp}.${fileExt}`
+      const fileName = `${user.id}/request-${timestamp}.${fileExt}`
 
       // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('racket_photos')
         .upload(fileName, selectedFile, {
           cacheControl: '3600',
-          upsert: false, // Don't overwrite, use unique names
+          upsert: false,
         })
 
       if (uploadError) {
@@ -95,28 +88,17 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('racket_photos')
         .getPublicUrl(fileName)
-
-      // Update profile with new avatar URL using server-validated user ID
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id) // Use server-validated ID
-
-      if (updateError) {
-        throw updateError
-      }
 
       // Notify parent component
       onUploadComplete(publicUrl)
 
-      // Reset state
+      // Keep preview but clear file
       setSelectedFile(null)
-      setPreviewUrl(null)
     } catch (err) {
       console.error('Upload error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to upload avatar')
+      setError(err instanceof Error ? err.message : 'Failed to upload photo')
     } finally {
       setIsUploading(false)
     }
@@ -124,67 +106,65 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
 
   const handleCancel = () => {
     setSelectedFile(null)
-    setPreviewUrl(null)
+    setPreviewUrl(initialPhotoUrl || null)
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
-  const displayUrl = previewUrl || currentAvatarUrl
-
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Avatar Display */}
+    <div className="space-y-4">
+      {/* Upload Area */}
       <div
-        className="relative group cursor-pointer"
-        onClick={() => !selectedFile && fileInputRef.current?.click()}
-        style={{ width: size, height: size }}
+        className={`relative border-2 border-dashed rounded-lg overflow-hidden ${
+          previewUrl ? 'border-gray-300' : 'border-gray-400'
+        } ${!previewUrl && !selectedFile ? 'cursor-pointer hover:border-primary' : ''}`}
+        onClick={() => !previewUrl && fileInputRef.current?.click()}
+        style={{ minHeight: '200px' }}
       >
-        {displayUrl ? (
-          <Image
-            src={displayUrl}
-            alt="Profile avatar"
-            width={size}
-            height={size}
-            className="rounded-full object-cover border-4 border-gray-200"
-            style={{ objectPosition: 'center', aspectRatio: '1/1' }}
-          />
-        ) : (
-          <div
-            className="rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-4 border-gray-200"
-            style={{ width: size, height: size }}
-          >
-            <span className="text-white text-4xl font-bold">
-              {userId.substring(0, 2).toUpperCase()}
-            </span>
+        {previewUrl ? (
+          <div className="relative w-full h-64">
+            <Image
+              src={previewUrl}
+              alt="Racket photo"
+              fill
+              className="object-contain"
+            />
           </div>
-        )}
-
-        {/* Camera Overlay */}
-        {!selectedFile && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="w-8 h-8 text-white" />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+            <Camera className="w-12 h-12 mb-2" />
+            <p className="text-sm font-medium">Tap to upload or take photo</p>
+            <p className="text-xs mt-1">Clear photo showing the full racket</p>
           </div>
         )}
       </div>
+
+      {/* Helper Text */}
+      {!previewUrl && (
+        <p className="text-sm text-gray-600">
+          This helps your stringer prepare. Include the full racket, strings, and any visible wear.
+        </p>
+      )}
 
       {/* File Input (Hidden) */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
       />
 
       {/* Actions */}
-      {selectedFile ? (
+      {selectedFile && !isUploading && (
         <div className="flex gap-2">
           <Button
             onClick={handleUpload}
             disabled={isUploading}
-            size="sm"
+            className="flex-1"
           >
             {isUploading ? (
               <>
@@ -192,24 +172,25 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
                 Uploading...
               </>
             ) : (
-              'Save Photo'
+              'Confirm Photo'
             )}
           </Button>
           <Button
             onClick={handleCancel}
             disabled={isUploading}
             variant="outline"
-            size="sm"
           >
             <X className="w-4 h-4 mr-1" />
             Cancel
           </Button>
         </div>
-      ) : (
+      )}
+
+      {previewUrl && !selectedFile && (
         <Button
           onClick={() => fileInputRef.current?.click()}
           variant="outline"
-          size="sm"
+          className="w-full"
         >
           <Camera className="w-4 h-4 mr-2" />
           Change Photo
@@ -218,11 +199,13 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
 
       {/* Error Message */}
       {error && (
-        <p className="text-sm text-red-600">{error}</p>
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
       )}
 
-      {/* File Requirements */}
-      {!selectedFile && (
+      {/* Requirements */}
+      {!selectedFile && !previewUrl && (
         <p className="text-xs text-gray-500 text-center">
           JPG, PNG or WEBP. Max 5MB.
         </p>
