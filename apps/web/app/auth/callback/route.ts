@@ -25,10 +25,23 @@ export async function GET(request: NextRequest) {
         },
       }
     )
-    
+
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin)
+  // SECURITY: Whitelist allowed redirect origins to prevent open redirect attacks
+  const allowedOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ].filter(Boolean) as string[]
+
+  // Check if the request origin is in the whitelist
+  if (allowedOrigins.includes(requestUrl.origin)) {
+    return NextResponse.redirect(`${requestUrl.origin}/discover`)
+  }
+
+  // Fallback to env variable or localhost
+  const fallbackUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return NextResponse.redirect(`${fallbackUrl}/discover`)
 }

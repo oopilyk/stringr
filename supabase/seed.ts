@@ -43,6 +43,16 @@ async function seedData() {
           accepts_rush: true,
           rush_fee_cents: 1000, // $10
           max_daily_jobs: 6,
+          flexible_availability: false,
+          string_inventory: [
+            { brand: 'Babolat', model: 'RPM Blast', gauge: '17g', quantity: 10, price_cents: 1800 },
+            { brand: 'Solinco', model: 'Hyper-G', gauge: '17g', quantity: 8, price_cents: 1600 },
+            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 6, price_cents: 2200 },
+          ],
+          dropoff_methods: [
+            { method: 'Meet at location', details: 'I can meet you at local tennis courts' },
+            { method: 'Drop off at location', details: 'Drop off at my home - address provided after booking' }
+          ],
           services: [
             { name: 'Restring', price_cents: 2500 },
             { name: 'Restring + Grip', price_cents: 3500 },
@@ -77,6 +87,16 @@ async function seedData() {
           accepts_rush: true,
           rush_fee_cents: 1500, // $15
           max_daily_jobs: 4,
+          flexible_availability: false,
+          string_inventory: [
+            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 12, price_cents: 2200 },
+            { brand: 'Tecnifibre', model: 'ATP Razor Code', gauge: '17g', quantity: 8, price_cents: 1500 },
+            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 6, price_cents: 1200 },
+          ],
+          dropoff_methods: [
+            { method: 'Meet at location', details: 'Available weekends at local parks' },
+            { method: 'Drop off at location', details: 'Home address provided after confirmation' }
+          ],
           services: [
             { name: 'Premium Restring', price_cents: 3000 },
             { name: 'Premium + Grip', price_cents: 4200 },
@@ -109,6 +129,16 @@ async function seedData() {
           accepts_rush: false,
           rush_fee_cents: 0,
           max_daily_jobs: 8,
+          flexible_availability: false,
+          string_inventory: [
+            { brand: 'Tecnifibre', model: 'ATP Razor Code', gauge: '17g', quantity: 15, price_cents: 1500 },
+            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 10, price_cents: 1200 },
+            { brand: 'Gamma', model: 'Zo', gauge: '17g', quantity: 8, price_cents: 1000 },
+          ],
+          dropoff_methods: [
+            { method: 'Drop off at location', details: 'Evening drop-off available - address on confirmation' },
+            { method: 'Mail service', details: 'Pre-paid shipping label provided' }
+          ],
           services: [
             { name: 'Basic Restring', price_cents: 2000 },
             { name: 'Restring + Basic Grip', price_cents: 2800 }
@@ -141,6 +171,16 @@ async function seedData() {
           accepts_rush: true,
           rush_fee_cents: 500, // $5
           max_daily_jobs: 10,
+          flexible_availability: true,
+          string_inventory: [
+            { brand: 'Babolat', model: 'Xcel', gauge: '16g', quantity: 20, price_cents: 1400 },
+            { brand: 'Gamma', model: 'Zo', gauge: '17g', quantity: 12, price_cents: 1000 },
+            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 10, price_cents: 1200 },
+          ],
+          dropoff_methods: [
+            { method: 'Mobile service - I come to you', details: 'Available within 15 mile radius of Rockville' },
+            { method: 'Meet at location', details: 'Can meet at local tennis courts or parks' }
+          ],
           services: [
             { name: 'Mobile Service', price_cents: 2800 },
             { name: 'Junior Setup', price_cents: 2300 },
@@ -174,6 +214,16 @@ async function seedData() {
           accepts_rush: true,
           rush_fee_cents: 1200, // $12
           max_daily_jobs: 5,
+          flexible_availability: false,
+          string_inventory: [
+            { brand: 'Babolat', model: 'Natural Gut', gauge: '16g', quantity: 4, price_cents: 4500 },
+            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 8, price_cents: 2200 },
+            { brand: 'Solinco', model: 'Tour Bite', gauge: '17g', quantity: 6, price_cents: 1700 },
+          ],
+          dropoff_methods: [
+            { method: 'Drop off at location', details: 'Professional studio - address shared after booking' },
+            { method: 'Meet at location', details: 'Available at select tournaments and clubs' }
+          ],
           services: [
             { name: 'Pro Restring', price_cents: 3500 },
             { name: 'Natural Gut Setup', price_cents: 5500 },
@@ -206,6 +256,17 @@ async function seedData() {
           accepts_rush: true,
           rush_fee_cents: 700, // $7
           max_daily_jobs: 12,
+          flexible_availability: false,
+          string_inventory: [
+            { brand: 'Babolat', model: 'RPM Blast', gauge: '17g', quantity: 25, price_cents: 1800 },
+            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 20, price_cents: 1200 },
+            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 15, price_cents: 2200 },
+            { brand: 'Head', model: 'Velocity MLT', gauge: '17g', quantity: 12, price_cents: 1300 },
+          ],
+          dropoff_methods: [
+            { method: 'Drop off at shop', details: '123 Tennis Court Lane, Silver Spring MD - Open 9am-7pm weekdays' },
+            { method: 'Pick up from location', details: 'Free pickup within 10 miles' }
+          ],
           services: [
             { name: 'Shop Service', price_cents: 2700 },
             { name: 'Grip + String', price_cents: 3200 },
@@ -358,85 +419,123 @@ async function seedData() {
 
     // Create sample requests
     console.log('Creating sample requests...')
-    
+
     const sampleRequests = [
       {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[0]?.id,
         status: 'completed',
-        racquet_brand: 'Babolat',
-        racquet_model: 'Pure Aero',
-        string_pref: 'RPM Blast 17',
-        tension_lbs: 55,
-        notes: 'Please use fresh strings, playing tournament next week',
-        dropoff_method: 'meetup',
-        address: '123 University Ave, Palo Alto, CA',
-        lat: 37.4455,
-        lng: -122.1596,
-        quoted_price_cents: 2500,
-        payment_status: 'paid'
+        racket_photo_url: 'https://placehold.co/800x600/png?text=Babolat+Pure+Aero',
+        service_type: 'restring_only',
+        string_selection: {
+          brand: 'Babolat',
+          model: 'RPM Blast',
+          gauge: '17g',
+          price_cents: 1800
+        },
+        tension_mains_lbs: 55,
+        tension_crosses_lbs: 55,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: '123 University Ave, Palo Alto, CA'
+        },
+        special_instructions: 'Please use fresh strings, playing tournament next week',
+        estimated_price_cents: 4300,
+        final_price_cents: 4300,
+        completed_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
       },
       {
         player_id: playerProfiles[1]?.id,
         stringer_id: stringerProfiles[1]?.id,
         status: 'in_progress',
-        racquet_brand: 'Wilson',
-        racquet_model: 'Blade 98',
-        string_pref: 'Luxilon ALU Power 16L',
-        tension_lbs: 58,
-        notes: 'Hybrid with natural gut cross if available',
-        dropoff_method: 'pickup',
-        address: '456 Main St, San Mateo, CA',
-        lat: 37.5630,
-        lng: -122.3255,
-        quoted_price_cents: 4500,
-        payment_status: 'unpaid'
+        racket_photo_url: 'https://placehold.co/800x600/png?text=Wilson+Blade+98',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Luxilon',
+          model: 'ALU Power',
+          gauge: '16L',
+          price_cents: 2200
+        },
+        tension_mains_lbs: 58,
+        tension_crosses_lbs: 56,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Drop off at location',
+          details: '456 Main St, San Mateo, CA'
+        },
+        special_instructions: 'Hybrid with natural gut cross if available',
+        estimated_price_cents: 5400,
+        final_price_cents: 5400,
+        accepted_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
       },
       {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[2]?.id,
-        status: 'ready',
-        racquet_brand: 'Head',
-        racquet_model: 'Speed MP',
-        string_pref: 'Tecnifibre ATP Razor Code 17',
-        tension_lbs: 52,
-        dropoff_method: 'meetup',
-        address: 'Stanford Tennis Courts',
-        lat: 37.4275,
-        lng: -122.1697,
-        quoted_price_cents: 2000,
-        payment_status: 'paid'
+        status: 'completed',
+        racket_photo_url: 'https://placehold.co/800x600/png?text=Head+Speed+MP',
+        service_type: 'restring_only',
+        string_selection: {
+          brand: 'Tecnifibre',
+          model: 'ATP Razor Code',
+          gauge: '17g',
+          price_cents: 1500
+        },
+        tension_mains_lbs: 52,
+        tension_crosses_lbs: 52,
+        string_pattern: 'existing',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Stanford Tennis Courts'
+        },
+        estimated_price_cents: 3500,
+        final_price_cents: 3500,
+        completed_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days ago
       },
       {
         player_id: playerProfiles[1]?.id,
         stringer_id: stringerProfiles[0]?.id,
-        status: 'requested',
-        racquet_brand: 'Yonex',
-        racquet_model: 'EZONE 98',
-        string_pref: 'Solinco Hyper-G 17',
-        tension_lbs: 56,
-        notes: 'Need it for weekend match, can pay rush fee',
-        dropoff_method: 'meetup',
-        address: 'Central Park, San Mateo',
-        lat: 37.5444,
-        lng: -122.3136,
-        quoted_price_cents: 3500,
-        payment_status: 'unpaid'
+        status: 'pending',
+        racket_photo_url: 'https://placehold.co/800x600/png?text=Yonex+EZONE+98',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Solinco',
+          model: 'Hyper-G',
+          gauge: '17g',
+          price_cents: 1600
+        },
+        tension_mains_lbs: 56,
+        tension_crosses_lbs: 54,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Central Park, San Mateo'
+        },
+        special_instructions: 'Need it for weekend match, can pay rush fee',
+        preferred_completion_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
+        estimated_price_cents: 4600
       },
       {
         player_id: playerProfiles[0]?.id,
-        status: 'requested',
-        racquet_brand: 'Prince',
-        racquet_model: 'Textreme Tour 100P',
-        string_pref: 'Babolat Xcel 16',
-        tension_lbs: 54,
-        notes: 'Looking for quick turnaround',
-        dropoff_method: 'pickup',
-        address: '789 Forest Ave, Palo Alto, CA',
-        lat: 37.4520,
-        lng: -122.1430,
-        quoted_price_cents: 0, // Will be set when stringer accepts
-        payment_status: 'unpaid'
+        stringer_id: stringerProfiles[3]?.id,
+        status: 'pending',
+        racket_photo_url: 'https://placehold.co/800x600/png?text=Prince+Textreme',
+        service_type: 'full_service',
+        string_selection: {
+          brand: 'Babolat',
+          model: 'Xcel',
+          gauge: '16g',
+          price_cents: 1400
+        },
+        tension_mains_lbs: 54,
+        tension_crosses_lbs: 54,
+        string_pattern: 'ask_stringer',
+        dropoff_method: {
+          method: 'Drop off at location',
+          details: '789 Forest Ave, Palo Alto, CA'
+        },
+        special_instructions: 'Looking for quick turnaround',
+        estimated_price_cents: 4200
       }
     ]
 

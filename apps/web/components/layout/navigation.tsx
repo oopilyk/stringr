@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@stringr/ui'
 import { MessageSquare, Settings, Search, Menu, X } from 'lucide-react'
 import { SearchDropdown } from './search-dropdown'
@@ -17,6 +18,40 @@ export function Navigation() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
+
+  // Check if user is a stringer and fetch pending requests count
+  const { data: stringerSettings } = useQuery({
+    queryKey: ['stringer-settings', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null
+      const { data } = await supabase
+        .from('stringer_settings')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      return data
+    },
+    enabled: !!user?.id,
+  })
+
+  const isStringer = !!stringerSettings
+
+  // Fetch unviewed pending requests count
+  const { data: pendingRequestsCount = 0 } = useQuery({
+    queryKey: ['pending-requests-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0
+      const { count } = await supabase
+        .from('requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('stringer_id', user.id)
+        .eq('status', 'pending')
+        .is('viewed_at', null)
+      return count || 0
+    },
+    enabled: !!user?.id && isStringer,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  })
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -47,15 +82,15 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={profile ? "/discover" : "/"} className="flex items-center space-x-2 flex-shrink-0">
+          <Link href={profile ? "/discover" : "/"} className="flex items-center space-x-3 flex-shrink-0">
             <img
               src="/logo.jpg"
               alt="Stringr Logo"
-              width={40}
-              height={40}
+              width={48}
+              height={48}
               className="rounded-full object-cover"
             />
-            <span className="text-xl font-bold text-gray-900 hidden sm:inline">STRINGR</span>
+            <span className="text-2xl font-bold text-primary hidden sm:inline">STRINGR</span>
           </Link>
 
           {/* Desktop Navigation - Left Side Links */}
@@ -70,9 +105,14 @@ export function Navigation() {
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors relative"
                 >
                   Dashboard
+                  {pendingRequestsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {pendingRequestsCount}
+                    </span>
+                  )}
                 </Link>
               </>
             )}
@@ -255,10 +295,17 @@ export function Navigation() {
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md font-medium"
+                  className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md font-medium relative"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  <span className="flex items-center justify-between">
+                    Dashboard
+                    {pendingRequestsCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {pendingRequestsCount}
+                      </span>
+                    )}
+                  </span>
                 </Link>
                 <Link
                   href="/messages"

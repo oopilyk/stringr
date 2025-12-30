@@ -28,7 +28,7 @@ export function Step3Equipment({ register, errors, setValue, watch }: Step3Equip
     if (current.includes(type)) {
       setValue(
         'supported_racket_types',
-        current.filter((t) => t !== type)
+        current.filter((t: string) => t !== type)
       )
     } else {
       setValue('supported_racket_types', [...current, type])
@@ -49,7 +49,7 @@ export function Step3Equipment({ register, errors, setValue, watch }: Step3Equip
           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
         >
           <option value="">Select...</option>
-          {MACHINE_BRANDS.map((brand) => (
+          {MACHINE_BRANDS.map((brand: string) => (
             <option key={brand} value={brand}>
               {brand}
             </option>
@@ -123,7 +123,7 @@ export function Step3Equipment({ register, errors, setValue, watch }: Step3Equip
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Racket Types You Can String</label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {RACKET_TYPES.map((type) => (
+          {RACKET_TYPES.map((type: string) => (
             <label
               key={type}
               className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${

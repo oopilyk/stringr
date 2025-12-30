@@ -44,16 +44,17 @@ export function Step6Availability({ register, errors, setValue, watch, getValues
   const dropoffMethods = watch('dropoff_methods') || []
   const availability = watch('availability') || []
   const maxDailyJobs = watch('max_daily_jobs') || 5
+  const flexibleAvailability = watch('flexible_availability') || false
 
   const toggleDropoffMethod = (method: string) => {
     const current = dropoffMethods
-    const existing = current.find((m) => m.method === method)
+    const existing = current.find((m: DropoffMethodConfig) => m.method === method)
 
     if (existing) {
       // Remove it
       setValue(
         'dropoff_methods',
-        current.filter((m) => m.method !== method)
+        current.filter((m: DropoffMethodConfig) => m.method !== method)
       )
     } else {
       // Add it
@@ -66,13 +67,13 @@ export function Step6Availability({ register, errors, setValue, watch, getValues
 
   const updateDropoffDetails = (method: string, details: string) => {
     const current = dropoffMethods
-    const updated = current.map((m) => (m.method === method ? { ...m, details } : m))
+    const updated = current.map((m: DropoffMethodConfig) => (m.method === method ? { ...m, details } : m))
     setValue('dropoff_methods', updated)
   }
 
-  const isMethodEnabled = (method: string) => dropoffMethods.some((m) => m.method === method)
+  const isMethodEnabled = (method: string) => dropoffMethods.some((m: DropoffMethodConfig) => m.method === method)
 
-  const getMethodDetails = (method: string) => dropoffMethods.find((m) => m.method === method)?.details || ''
+  const getMethodDetails = (method: string) => dropoffMethods.find((m: DropoffMethodConfig) => m.method === method)?.details || ''
 
   return (
     <div className="space-y-6">
@@ -119,14 +120,42 @@ export function Step6Availability({ register, errors, setValue, watch, getValues
         {errors.dropoff_methods && <p className="mt-2 text-sm text-red-600">{errors.dropoff_methods.message}</p>}
       </div>
 
-      {/* Weekly Availability */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">Your Weekly Availability (Optional)</label>
-        <AvailabilityScheduler availability={availability} onChange={(avail) => setValue('availability', avail)} />
-        <p className="mt-2 text-xs text-gray-500">
-          Let players know when you're typically available. You can always adjust individual request timing.
-        </p>
+      {/* Flexible Availability Option */}
+      <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+        <label className="flex items-start cursor-pointer">
+          <input
+            type="checkbox"
+            {...register('flexible_availability')}
+            className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary mt-0.5"
+          />
+          <div className="ml-3">
+            <div className="font-medium text-sm text-gray-900">Time slots don't matter to me</div>
+            <div className="text-xs text-gray-600 mt-1">
+              Check this if you're flexible with dropoff times and don't need to set specific availability hours.
+              Players can drop off rackets at any time.
+            </div>
+          </div>
+        </label>
       </div>
+
+      {/* Weekly Availability */}
+      {!flexibleAvailability && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Your Weekly Availability (Optional)</label>
+          <AvailabilityScheduler availability={availability} onChange={(avail) => setValue('availability', avail)} />
+          <p className="mt-2 text-xs text-gray-500">
+            Let players know when you're typically available for dropoffs. You can always adjust individual request timing.
+          </p>
+        </div>
+      )}
+
+      {flexibleAvailability && (
+        <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+          <p className="text-gray-500 text-sm">
+            Since you have flexible availability, players can request dropoff at any time.
+          </p>
+        </div>
+      )}
 
       {/* Max Daily Jobs */}
       <div>

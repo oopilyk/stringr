@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, User, Calendar, MapPin } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSearchLocation } from '@/lib/contexts/search-location-context'
@@ -37,6 +38,7 @@ function formatDistance(km: number): string {
 
 
 export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
+  const router = useRouter()
   const { profile } = useAuth()
   const { searchLocation } = useSearchLocation()
   const [searchResults, setSearchResults] = useState<StringerSearchResult[]>([])
@@ -137,7 +139,10 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
                     <Link
                       href={`/discover?search=${encodeURIComponent(searchQuery)}`}
                       className="text-primary hover:underline text-xs normal-case float-right"
-                      onClick={onClose}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setTimeout(() => onClose(), 100)
+                      }}
                     >
                       SEE ALL →
                     </Link>
@@ -146,11 +151,14 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
               </div>
               <div className="space-y-1">
                 {searchResults.slice(0, 5).map((stringer) => (
-                  <Link
+                  <div
                     key={stringer.id}
-                    href={`/stringer/${stringer.id}`}
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-md transition-colors group"
-                    onClick={onClose}
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-md transition-colors group cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/stringer/${stringer.id}`)
+                      setTimeout(() => onClose(), 100)
+                    }}
                   >
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {stringer.avatar_url ? (
@@ -192,7 +200,7 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </>
@@ -217,7 +225,10 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
           <Link
             href="/discover"
             className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition-colors group"
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation()
+              setTimeout(() => onClose(), 100)
+            }}
           >
             <div className="flex items-center space-x-3">
               <User className="w-5 h-5 text-gray-400 group-hover:text-primary" />
@@ -229,7 +240,10 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
           <Link
             href="/dashboard"
             className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition-colors group"
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation()
+              setTimeout(() => onClose(), 100)
+            }}
           >
             <div className="flex items-center space-x-3">
               <Calendar className="w-5 h-5 text-gray-400 group-hover:text-primary" />
@@ -241,7 +255,10 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
           <Link
             href="/messages"
             className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition-colors group"
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation()
+              setTimeout(() => onClose(), 100)
+            }}
           >
             <div className="flex items-center space-x-3">
               <MapPin className="w-5 h-5 text-gray-400 group-hover:text-primary" />
@@ -265,28 +282,40 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
               <Link
                 href="/discover?service=restring"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Restring services
               </Link>
               <Link
                 href="/discover?rush=true"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Rush services
               </Link>
               <Link
                 href="/discover?rating=4.5"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Top rated stringers
               </Link>
               <Link
                 href="/my-profile"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 My profile
               </Link>
@@ -303,28 +332,40 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
               <Link
                 href="/discover?price=low"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Budget friendly
               </Link>
               <Link
                 href="/discover?experience=high"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Certified stringers
               </Link>
               <Link
                 href="/discover?turnaround=fast"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Same day service
               </Link>
               <Link
                 href="/settings"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setTimeout(() => onClose(), 100)
+                }}
               >
                 Settings
               </Link>

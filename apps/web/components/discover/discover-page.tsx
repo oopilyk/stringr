@@ -64,7 +64,7 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
         (position) => {
           const { latitude, longitude } = position.coords
           setLocation({ lat: latitude, lng: longitude })
-          setSearchParams(prev => ({
+          setSearchParams((prev: SearchStringersParams) => ({
             ...prev,
             lat: latitude,
             lng: longitude
@@ -78,7 +78,7 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
             const userLat = profile.lat
             const userLng = profile.lng
             setLocation({ lat: userLat, lng: userLng })
-            setSearchParams(prev => ({
+            setSearchParams((prev: SearchStringersParams) => ({
               ...prev,
               lat: userLat,
               lng: userLng
@@ -96,7 +96,7 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
         const userLat = profile.lat
         const userLng = profile.lng
         setLocation({ lat: userLat, lng: userLng })
-        setSearchParams(prev => ({
+        setSearchParams((prev: SearchStringersParams) => ({
           ...prev,
           lat: userLat,
           lng: userLng
@@ -109,7 +109,7 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
   }, [profile?.lat, profile?.lng])
 
   // Fetch stringers from database with fallback to sample data
-  const { data: stringers = [], isLoading, error } = useQuery({
+  const { data: stringers = [], isLoading } = useQuery({
     queryKey: ['stringers', searchParams, profile?.id, profile?.full_name],
     queryFn: async () => {
       try {
@@ -249,7 +249,7 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
             currentLocation={location}
             onLocationChange={(lat, lng) => {
               setLocation({ lat, lng })
-              setSearchParams(prev => ({ ...prev, lat, lng }))
+              setSearchParams((prev: SearchStringersParams) => ({ ...prev, lat, lng }))
               setLocationError(false)
             }}
           />

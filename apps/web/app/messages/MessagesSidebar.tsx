@@ -1,4 +1,18 @@
-export function MessagesSidebar({ conversations, onSelect, activeId }) {
+interface ConversationItem {
+  id: string
+  avatar: string
+  name: string
+  lastMessage: string
+  unread: number
+}
+
+interface MessagesSidebarProps {
+  conversations: ConversationItem[]
+  onSelect: (id: string) => void
+  activeId: string | null
+}
+
+export function MessagesSidebar({ conversations, onSelect, activeId }: MessagesSidebarProps) {
   return (
     <div className="w-80 border-r bg-white flex flex-col">
       <div className="p-4 border-b">

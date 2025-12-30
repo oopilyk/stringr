@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Button } from '@stringr/ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
+import { SignInSchema, MagicLinkSchema, validateData } from '@/lib/validation/schemas'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,6 +13,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [showPasswordField, setShowPasswordField] = useState(false)
+  const [attemptCount, setAttemptCount] = useState(0)
+  const [blockUntil, setBlockUntil] = useState<number | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -21,8 +24,16 @@ export default function LoginPage() {
     setMessage('')
 
     try {
+      // SECURITY: Validate email input
+      const validationResult = validateData(MagicLinkSchema, { email })
+      if (!validationResult.success) {
+        setMessage(`Error: ${validationResult.error}`)
+        setIsLoading(false)
+        return
+      }
+
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: validationResult.data.email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -43,6 +54,13 @@ export default function LoginPage() {
   const handleSignInWithPassword = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // SECURITY: Check if user is temporarily blocked
+    if (blockUntil && Date.now() < blockUntil) {
+      const remainingSeconds = Math.ceil((blockUntil - Date.now()) / 1000)
+      setMessage(`Too many failed attempts. Please wait ${remainingSeconds} seconds.`)
+      return
+    }
+
     if (!password) {
       setMessage('Please enter your password')
       return
@@ -52,15 +70,36 @@ export default function LoginPage() {
     setMessage('')
 
     try {
+      // SECURITY: Validate credentials
+      const validationResult = validateData(SignInSchema, { email, password })
+      if (!validationResult.success) {
+        setMessage(`Error: ${validationResult.error}`)
+        setIsLoading(false)
+        return
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validationResult.data.email,
+        password: validationResult.data.password,
       })
 
       if (error) {
-        setMessage(`Error: ${error.message}`)
+        // SECURITY: Track failed login attempts
+        const newAttemptCount = attemptCount + 1
+        setAttemptCount(newAttemptCount)
+
+        if (newAttemptCount >= 5) {
+          const blockTime = Date.now() + 60000 // Block for 1 minute
+          setBlockUntil(blockTime)
+          setMessage('Too many failed attempts. Please wait 1 minute before trying again.')
+        } else {
+          setMessage(`Error: ${error.message} (${5 - newAttemptCount} attempts remaining)`)
+        }
       } else {
-        router.push('/')
+        // Reset attempt count on successful login
+        setAttemptCount(0)
+        setBlockUntil(null)
+        router.push('/discover')
       }
     } catch (error) {
       setMessage('An unexpected error occurred')

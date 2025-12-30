@@ -21,7 +21,7 @@ export function Step2Background({ register, errors, setValue, watch }: Step2Back
     if (current.includes(cert)) {
       setValue(
         'certifications',
-        current.filter((c) => c !== cert)
+        current.filter((c: string) => c !== cert)
       )
     } else {
       setValue('certifications', [...current, cert])
@@ -33,7 +33,7 @@ export function Step2Background({ register, errors, setValue, watch }: Step2Back
     if (current.includes(level)) {
       setValue(
         'player_levels_served',
-        current.filter((l) => l !== level)
+        current.filter((l: string) => l !== level)
       )
     } else {
       setValue('player_levels_served', [...current, level])
@@ -115,7 +115,7 @@ export function Step2Background({ register, errors, setValue, watch }: Step2Back
           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
         >
           <option value="">Select...</option>
-          {STRINGING_LOCATIONS.map((location) => (
+          {STRINGING_LOCATIONS.map((location: string) => (
             <option key={location} value={location}>
               {location}
             </option>
@@ -127,7 +127,7 @@ export function Step2Background({ register, errors, setValue, watch }: Step2Back
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Player Levels You Serve</label>
         <div className="flex flex-wrap gap-2">
-          {PLAYER_LEVELS.map((level) => (
+          {PLAYER_LEVELS.map((level: string) => (
             <button
               key={level}
               type="button"

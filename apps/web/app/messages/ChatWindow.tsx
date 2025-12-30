@@ -1,4 +1,20 @@
-export function ChatWindow({ conversation }) {
+interface Message {
+  text: string
+  fromMe: boolean
+}
+
+interface Conversation {
+  avatar: string
+  name: string
+  subtitle: string
+  messages: Message[]
+}
+
+interface ChatWindowProps {
+  conversation: Conversation
+}
+
+export function ChatWindow({ conversation }: ChatWindowProps) {
   return (
     <div className="flex-1 flex flex-col bg-white">
       {/* Header */}

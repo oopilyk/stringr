@@ -1,33 +1,174 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
 import { StatusBadge, formatPrice } from '@stringr/ui'
 import { Button } from '@stringr/ui'
-import { DollarSign, Star, MessageSquare, CheckCircle, Activity } from 'lucide-react'
+import { DollarSign, Star, MessageSquare, CheckCircle, Activity, X } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 export function DashboardPage() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const supabase = createClient()
+  const queryClient = useQueryClient()
+  const searchParams = useSearchParams()
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
-  // For demo purposes, use empty requests array instead of API calls
-  const requests: any[] = []
-  const isLoading = false
+  useEffect(() => {
+    if (searchParams.get('request_submitted') === 'true') {
+      setShowSuccessMessage(true)
+      // Auto-hide after 5 seconds
+      const timer = setTimeout(() => setShowSuccessMessage(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams])
+
+  // Check if user is a stringer
+  const { data: stringerSettings } = useQuery({
+    queryKey: ['stringer-settings', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null
+      const { data } = await supabase
+        .from('stringer_settings')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      return data
+    },
+    enabled: !!user?.id,
+  })
+
+  const isStringer = !!stringerSettings
+
+  // Fetch player's requests (requests they made)
+  const { data: playerRequests = [], isLoading: playerLoading } = useQuery({
+    queryKey: ['player-requests', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return []
+
+      // First, get the requests
+      const { data: requests, error: requestsError } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('player_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (requestsError) {
+        console.error('Player requests error:', requestsError)
+        throw requestsError
+      }
+
+      if (!requests || requests.length === 0) return []
+
+      // Then, get the stringer profiles for these requests
+      const stringerIds = [...new Set(requests.map(r => r.stringer_id))]
+      const { data: stringers, error: stringersError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', stringerIds)
+
+      if (stringersError) {
+        console.error('Stringers fetch error:', stringersError)
+      }
+
+      // Merge the data
+      const stringerMap = new Map((stringers || []).map(s => [s.id, s]))
+      return requests.map(r => ({
+        ...r,
+        stringer: stringerMap.get(r.stringer_id)
+      }))
+    },
+    enabled: !!user?.id,
+  })
+
+  // Fetch stringer's incoming requests (requests sent to them)
+  // Always call this hook to maintain consistent hook order
+  const { data: stringerRequests = [], isLoading: stringerLoading } = useQuery({
+    queryKey: ['stringer-requests', user?.id],
+    queryFn: async () => {
+      if (!user?.id || !isStringer) return []
+
+      // First, get the requests
+      const { data: requests, error: requestsError } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('stringer_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (requestsError) {
+        console.error('Stringer requests error:', requestsError)
+        throw requestsError
+      }
+
+      if (!requests || requests.length === 0) return []
+
+      // Then, get the player profiles for these requests
+      const playerIds = [...new Set(requests.map(r => r.player_id))]
+      const { data: players, error: playersError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', playerIds)
+
+      if (playersError) {
+        console.error('Players fetch error:', playersError)
+      }
+
+      // Merge the data
+      const playerMap = new Map((players || []).map(p => [p.id, p]))
+      return requests.map(r => ({
+        ...r,
+        player: playerMap.get(r.player_id)
+      }))
+    },
+    enabled: !!user?.id && isStringer,
+  })
 
   if (!profile) {
     return <div>Loading...</div>
   }
 
-  const activeRequests = requests.filter(r => 
-    ['requested', 'accepted', 'in_progress', 'ready'].includes(r.status)
+  const requests = playerRequests
+  const isLoading = playerLoading
+
+  const activeRequests = requests.filter(r =>
+    ['pending', 'accepted', 'in_progress'].includes(r.status)
   )
   const completedRequests = requests.filter(r => r.status === 'completed')
+
+  const pendingStringerRequests = stringerRequests.filter(r => r.status === 'pending')
+  const activeStringerRequests = stringerRequests.filter(r =>
+    ['accepted', 'in_progress'].includes(r.status)
+  )
+
+  // Debug logging
+  console.log('Dashboard Debug:', {
+    isStringer,
+    stringerRequests,
+    pendingStringerRequests,
+    stringerRequestsLength: stringerRequests.length,
+    pendingLength: pendingStringerRequests.length,
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+
+      {/* Success Toast */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 animate-slide-in">
+          <CheckCircle className="w-5 h-5" />
+          <span className="font-medium">Your request has been submitted!</span>
+          <button
+            onClick={() => setShowSuccessMessage(false)}
+            className="ml-4 hover:bg-green-700 rounded p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page header */}
@@ -70,16 +211,97 @@ export function DashboardPage() {
             </div>
             <div className="text-3xl font-bold text-gray-900 mb-1">
               {formatPrice(
-                completedRequests.reduce((sum, r) => sum + (r.quoted_price_cents || 0), 0)
+                completedRequests.reduce((sum, r) => sum + (r.final_price_cents || r.estimated_price_cents || 0), 0)
               )}
             </div>
             <div className="text-gray-600">Total Spent</div>
           </div>
         </div>
 
+        {/* Stringer: Pending Requests */}
+        {isStringer && pendingStringerRequests.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Pending Requests ({pendingStringerRequests.length})
+            </h2>
+            <div className="space-y-4">
+              {pendingStringerRequests.map((request: any) => (
+                <div
+                  key={request.id}
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border-l-4 border-yellow-400"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <StatusBadge status={request.status} />
+                        <h3 className="text-lg font-bold text-gray-900">
+                          New Request from {request.player?.full_name}
+                        </h3>
+                        <span className="text-xl font-bold text-green-600">
+                          {formatPrice(request.estimated_price_cents)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 mb-1">Service</p>
+                          <p className="font-semibold text-gray-900 capitalize">
+                            {request.service_type?.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">String</p>
+                          <p className="font-semibold text-gray-900">
+                            {request.string_selection?.brand} {request.string_selection?.model}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Tension</p>
+                          <p className="font-semibold text-gray-900">
+                            M: {request.tension_mains_lbs} / C: {request.tension_crosses_lbs} lbs
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Requested</p>
+                          <p className="font-semibold text-gray-900">
+                            {new Date(request.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {request.preferred_time_slot && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Preferred dropoff:</span>{' '}
+                            {request.preferred_time_slot.day} {request.preferred_time_slot.start} - {request.preferred_time_slot.end}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-3 ml-6">
+                      <Button
+                        variant="outline"
+                        className="border-2 hover:bg-gray-50"
+                      >
+                        View Details
+                      </Button>
+                      <Button className="bg-green-600 hover:bg-green-700">
+                        Accept
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Active Requests */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Active Requests</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {isStringer ? 'My Requests (as Player)' : 'Active Requests'}
+          </h2>
 
           {isLoading ? (
             <div className="space-y-4">
@@ -107,11 +329,11 @@ export function DashboardPage() {
                       <div className="flex items-center space-x-3 mb-3">
                         <StatusBadge status={request.status} />
                         <h3 className="text-lg font-bold text-gray-900">
-                          {request.racquet_brand} {request.racquet_model}
+                          {request.service_type?.replace(/_/g, ' ')}
                         </h3>
-                        {request.quoted_price_cents && (
+                        {request.estimated_price_cents && (
                           <span className="text-xl font-bold text-green-600">
-                            {formatPrice(request.quoted_price_cents)}
+                            {formatPrice(request.estimated_price_cents)}
                           </span>
                         )}
                       </div>
@@ -123,18 +345,20 @@ export function DashboardPage() {
                             {request.stringer?.full_name || 'Not assigned'}
                           </p>
                         </div>
-                        {request.string_pref && (
+                        {request.string_selection && (
                           <div>
                             <p className="text-gray-500 mb-1">String</p>
-                            <p className="font-semibold text-gray-900">{request.string_pref}</p>
+                            <p className="font-semibold text-gray-900">
+                              {request.string_selection.brand} {request.string_selection.model}
+                            </p>
                           </div>
                         )}
-                        {request.tension_lbs && (
-                          <div>
-                            <p className="text-gray-500 mb-1">Tension</p>
-                            <p className="font-semibold text-gray-900">{request.tension_lbs} lbs</p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-gray-500 mb-1">Tension</p>
+                          <p className="font-semibold text-gray-900">
+                            M: {request.tension_mains_lbs} / C: {request.tension_crosses_lbs} lbs
+                          </p>
+                        </div>
                         <div>
                           <p className="text-gray-500 mb-1">Created</p>
                           <p className="font-semibold text-gray-900">
@@ -187,13 +411,13 @@ export function DashboardPage() {
                       <div className="flex items-center space-x-2 mb-2">
                         <StatusBadge status={request.status} />
                       </div>
-                      <h3 className="font-bold text-lg text-gray-900">
-                        {request.racquet_brand} {request.racquet_model}
+                      <h3 className="font-bold text-lg text-gray-900 capitalize">
+                        {request.service_type?.replace(/_/g, ' ')}
                       </h3>
                     </div>
-                    {request.quoted_price_cents && (
+                    {request.final_price_cents && (
                       <div className="text-xl font-bold text-green-600">
-                        {formatPrice(request.quoted_price_cents)}
+                        {formatPrice(request.final_price_cents)}
                       </div>
                     )}
                   </div>

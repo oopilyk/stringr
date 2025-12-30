@@ -52,6 +52,8 @@ export function useAuth() {
       return data as Profile
     },
     enabled: !!user,
+    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   })
 
   return {
