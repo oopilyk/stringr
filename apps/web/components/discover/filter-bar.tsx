@@ -445,31 +445,39 @@ export function FilterBar({ searchParams, onSearchParamsChange, currentLocation,
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
+            {/* Any rating option */}
             <button
               onClick={() => handleRatingApply(undefined)}
               className="w-full text-left px-4 py-3 rounded-md hover:bg-gray-100 transition-colors"
             >
               Any rating
             </button>
-            <button
-              onClick={() => handleRatingApply(3)}
-              className="w-full text-left px-4 py-3 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              3+ stars ★★★
-            </button>
-            <button
-              onClick={() => handleRatingApply(4)}
-              className="w-full text-left px-4 py-3 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              4+ stars ★★★★
-            </button>
-            <button
-              onClick={() => handleRatingApply(4.5)}
-              className="w-full text-left px-4 py-3 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              4.5+ stars ★★★★★
-            </button>
+
+            {/* Interactive star selector */}
+            <div className="px-4">
+              <p className="text-sm text-gray-600 mb-3">Select minimum rating:</p>
+              <div className="flex items-center justify-center space-x-2">
+                {[1, 2, 3, 4, 5].map((starValue) => (
+                  <button
+                    key={starValue}
+                    onClick={() => handleRatingApply(starValue)}
+                    className="group relative"
+                  >
+                    <Star
+                      className={`w-10 h-10 transition-all ${
+                        searchParams.min_rating && starValue <= searchParams.min_rating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'fill-gray-200 text-gray-300 hover:fill-yellow-200 hover:text-yellow-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-center text-xs text-gray-500 mt-2">
+                Click a star to filter by that rating and above
+              </p>
+            </div>
           </div>
         </div>
       )}

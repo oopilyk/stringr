@@ -9,6 +9,10 @@ export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`
 }
 
+export function formatPriceValue(cents: number): string {
+  return `${(cents / 100).toFixed(2)}`
+}
+
 export function formatDistance(km: number): string {
   if (km < 1) {
     return `${Math.round(km * 1000)}m`

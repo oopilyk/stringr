@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, User, Calendar, MapPin } from 'lucide-react'
+import { User, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -46,7 +46,7 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
   const supabase = createClient()
 
   useEffect(() => {
-    const searchStringers = async () => {
+    const searchProfiles = async () => {
       if (!searchQuery || searchQuery.trim().length < 2) {
         setSearchResults([])
         return
@@ -55,23 +55,35 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
       setIsSearching(true)
 
       try {
-        // Search for stringers by name in database
-        const { data: dbStringers, error } = await supabase
-          .from('stringer_settings')
-          .select(`
-            *,
-            profiles!inner (*)
-          `)
-          .not('onboarding_completed_at', 'is', null)
-          .ilike('profiles.full_name', `%${searchQuery}%`)
+        // Search for all profiles by name
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('full_name', `%${searchQuery}%`)
+          .limit(10)
 
-        if (error) {
-          console.error('Search error:', error)
+        if (profilesError) {
+          console.error('Search error:', profilesError)
         }
 
+        if (!profiles || profiles.length === 0) {
+          setSearchResults([])
+          setIsSearching(false)
+          return
+        }
+
+        // Fetch stringer settings for these profiles
+        const profileIds = profiles.map(p => p.id)
+        const { data: stringerSettings } = await supabase
+          .from('stringer_settings')
+          .select('*')
+          .in('id', profileIds)
+          .not('onboarding_completed_at', 'is', null)
+
         // Transform database results
-        const results = (dbStringers || []).map(settings => {
-          const profileData = Array.isArray(settings.profiles) ? settings.profiles[0] : settings.profiles
+        const results = profiles.map(profileData => {
+          // Find stringer settings if exists
+          const settings = stringerSettings?.find(s => s.id === profileData.id)
 
           // Calculate distance using search location (filter location) or fallback to profile location
           let distance = 999
@@ -84,7 +96,8 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
 
           return {
             ...profileData,
-            stringer_settings: {
+            is_stringer: !!settings,
+            stringer_settings: settings ? {
               id: settings.id,
               base_price_cents: settings.base_price_cents,
               turnaround_hours: settings.turnaround_hours,
@@ -94,18 +107,22 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
               services: settings.services,
               string_inventory: settings.string_inventory,
               availability: settings.availability
-            },
+            } : undefined,
             rating: {
               stringer_id: profileData.id,
               avg_rating: 0,
               review_count: 0
             },
             distance_km: distance
-          } as StringerSearchResult
+          } as StringerSearchResult & { is_stringer: boolean }
         })
 
-        // Sort by distance (closest first)
-        results.sort((a, b) => (a.distance_km || 999) - (b.distance_km || 999))
+        // Sort by: stringers first, then by distance
+        results.sort((a, b) => {
+          if (a.is_stringer && !b.is_stringer) return -1
+          if (!a.is_stringer && b.is_stringer) return 1
+          return (a.distance_km || 999) - (b.distance_km || 999)
+        })
 
         setSearchResults(results)
       } catch (error) {
@@ -117,7 +134,7 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
     }
 
     // Debounce search - wait 300ms after user stops typing
-    const timeoutId = setTimeout(searchStringers, 300)
+    const timeoutId = setTimeout(searchProfiles, 300)
     return () => clearTimeout(timeoutId)
   }, [searchQuery, profile, supabase, searchLocation])
 
@@ -135,7 +152,7 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
             <>
               <div className="mb-2">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide px-2">
-                  STRINGERS {searchResults.length > 0 && (
+                  PEOPLE {searchResults.length > 0 && (
                     <Link
                       href={`/discover?search=${encodeURIComponent(searchQuery)}`}
                       className="text-primary hover:underline text-xs normal-case float-right"
@@ -150,64 +167,68 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
                 </h3>
               </div>
               <div className="space-y-1">
-                {searchResults.slice(0, 5).map((stringer) => (
-                  <div
-                    key={stringer.id}
+                {searchResults.slice(0, 5).map((person) => (
+                  <a
+                    key={person.id}
+                    href={`/stringer/${person.id}`}
                     className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-md transition-colors group cursor-pointer"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(`/stringer/${stringer.id}`)
-                      setTimeout(() => onClose(), 100)
+                      e.preventDefault()
+                      router.push(`/stringer/${person.id}`)
+                      onClose()
                     }}
                   >
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {stringer.avatar_url ? (
+                      {person.avatar_url ? (
                         <img
-                          src={stringer.avatar_url}
-                          alt={stringer.full_name || 'Stringer'}
+                          src={person.avatar_url}
+                          alt={person.full_name || 'User'}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <span className="text-lg font-semibold text-primary">
-                          {stringer.full_name?.[0] || 'S'}
+                          {person.full_name?.[0] || 'U'}
                         </span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
                         <p className="font-semibold text-gray-900 group-hover:text-primary truncate">
-                          {stringer.full_name}
+                          {person.full_name}
                         </p>
-                        {stringer.rating && stringer.rating.avg_rating > 0 && (
+                        {(person as any).is_stringer ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            Stringer
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            Player
+                          </span>
+                        )}
+                        {person.rating && person.rating.avg_rating > 0 && (
                           <span className="text-xs text-gray-500">
-                            ⭐ {stringer.rating.avg_rating.toFixed(1)}
+                            ⭐ {person.rating.avg_rating.toFixed(1)}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        {stringer.city && <span>{stringer.city}</span>}
-                        {stringer.distance_km !== undefined && stringer.distance_km < 999 && (
+                        {person.city && <span>{person.city}</span>}
+                        {person.distance_km !== undefined && person.distance_km < 999 && (
                           <>
                             <span>•</span>
-                            <span>{formatDistance(stringer.distance_km)}</span>
-                          </>
-                        )}
-                        {stringer.years_experience && (
-                          <>
-                            <span>•</span>
-                            <span>{stringer.years_experience}+ years</span>
+                            <span>{formatDistance(person.distance_km)}</span>
                           </>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </a>
                 ))}
               </div>
             </>
           ) : (
             <div className="text-center py-8 text-gray-500">
               <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No stringers found matching "{searchQuery}"</p>
+              <p className="text-sm">No people found matching "{searchQuery}"</p>
               <p className="text-xs mt-1">Try searching for a different name</p>
             </div>
           )}
@@ -221,7 +242,7 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
       <div className="p-4">
         {/* Quick Links Section */}
-        <div className="mb-4">
+        <div className="space-y-1">
           <Link
             href="/discover"
             className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition-colors group"
@@ -233,6 +254,21 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
             <div className="flex items-center space-x-3">
               <User className="w-5 h-5 text-gray-400 group-hover:text-primary" />
               <span className="font-medium text-gray-700 group-hover:text-gray-900">Stringers</span>
+            </div>
+            <span className="text-gray-400">→</span>
+          </Link>
+
+          <Link
+            href="/players"
+            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition-colors group"
+            onClick={(e) => {
+              e.stopPropagation()
+              setTimeout(() => onClose(), 100)
+            }}
+          >
+            <div className="flex items-center space-x-3">
+              <User className="w-5 h-5 text-gray-400 group-hover:text-primary" />
+              <span className="font-medium text-gray-700 group-hover:text-gray-900">Players</span>
             </div>
             <span className="text-gray-400">→</span>
           </Link>
@@ -251,126 +287,6 @@ export function SearchDropdown({ onClose, searchQuery }: SearchDropdownProps) {
             </div>
             <span className="text-gray-400">→</span>
           </Link>
-
-          <Link
-            href="/messages"
-            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition-colors group"
-            onClick={(e) => {
-              e.stopPropagation()
-              setTimeout(() => onClose(), 100)
-            }}
-          >
-            <div className="flex items-center space-x-3">
-              <MapPin className="w-5 h-5 text-gray-400 group-hover:text-primary" />
-              <span className="font-medium text-gray-700 group-hover:text-gray-900">Nearby Stringers</span>
-            </div>
-            <span className="text-gray-400">→</span>
-          </Link>
-        </div>
-
-        {/* Categories Section */}
-        <div className="border-t border-gray-200 pt-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 px-4 py-2">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">🎾</span>
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">TENNIS</span>
-              </div>
-
-              <Link
-                href="/discover?service=restring"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Restring services
-              </Link>
-              <Link
-                href="/discover?rush=true"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Rush services
-              </Link>
-              <Link
-                href="/discover?rating=4.5"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Top rated stringers
-              </Link>
-              <Link
-                href="/my-profile"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                My profile
-              </Link>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 px-4 py-2">
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">🏓</span>
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">SERVICES</span>
-              </div>
-
-              <Link
-                href="/discover?price=low"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Budget friendly
-              </Link>
-              <Link
-                href="/discover?experience=high"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Certified stringers
-              </Link>
-              <Link
-                href="/discover?turnaround=fast"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Same day service
-              </Link>
-              <Link
-                href="/settings"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-md text-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setTimeout(() => onClose(), 100)
-                }}
-              >
-                Settings
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     </div>

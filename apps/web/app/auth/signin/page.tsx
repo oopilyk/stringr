@@ -171,7 +171,7 @@ export default function SignInPage() {
       <div className="relative z-10 flex flex-col items-center justify-center px-8 bg-gradient-to-br from-green-500 via-green-600 to-emerald-600" style={{ height: 'calc(100vh - 80px)' }}>
         <div className="flex flex-col items-center justify-center text-center max-w-5xl w-full">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
-            The Home of Tennis Stringing
+            The Home of Stringing
           </h1>
           <p className="text-base md:text-lg lg:text-xl text-white/95 max-w-2xl mb-8 leading-relaxed">
             Connecting players with professional stringers globally through ratings, reviews, and seamless booking.

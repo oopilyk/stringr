@@ -425,7 +425,7 @@ async function seedData() {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[0]?.id,
         status: 'completed',
-        racket_photo_url: 'https://placehold.co/800x600/png?text=Babolat+Pure+Aero',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861744-87e9592e8e2d?w=800&h=600&fit=crop',
         service_type: 'restring_only',
         string_selection: {
           brand: 'Babolat',
@@ -443,13 +443,15 @@ async function seedData() {
         special_instructions: 'Please use fresh strings, playing tournament next week',
         estimated_price_cents: 4300,
         final_price_cents: 4300,
+        tip_cents: 500, // $5 tip
+        completion_photo_url: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop',
         completed_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
       },
       {
         player_id: playerProfiles[1]?.id,
         stringer_id: stringerProfiles[1]?.id,
-        status: 'in_progress',
-        racket_photo_url: 'https://placehold.co/800x600/png?text=Wilson+Blade+98',
+        status: 'completed',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861509-c1625f2c0b5f?w=800&h=600&fit=crop',
         service_type: 'restring_grip',
         string_selection: {
           brand: 'Luxilon',
@@ -467,13 +469,15 @@ async function seedData() {
         special_instructions: 'Hybrid with natural gut cross if available',
         estimated_price_cents: 5400,
         final_price_cents: 5400,
-        accepted_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+        tip_cents: 750, // $7.50 tip
+        completion_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
+        completed_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
       },
       {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[2]?.id,
         status: 'completed',
-        racket_photo_url: 'https://placehold.co/800x600/png?text=Head+Speed+MP',
+        racket_photo_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&h=600&fit=crop',
         service_type: 'restring_only',
         string_selection: {
           brand: 'Tecnifibre',
@@ -490,13 +494,15 @@ async function seedData() {
         },
         estimated_price_cents: 3500,
         final_price_cents: 3500,
+        tip_cents: 1000, // $10 tip
+        completion_photo_url: 'https://images.unsplash.com/photo-1617883861653-c8c0de9aa87d?w=800&h=600&fit=crop',
         completed_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days ago
       },
       {
         player_id: playerProfiles[1]?.id,
         stringer_id: stringerProfiles[0]?.id,
-        status: 'pending',
-        racket_photo_url: 'https://placehold.co/800x600/png?text=Yonex+EZONE+98',
+        status: 'completed',
+        racket_photo_url: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop',
         service_type: 'restring_grip',
         string_selection: {
           brand: 'Solinco',
@@ -512,14 +518,17 @@ async function seedData() {
           details: 'Central Park, San Mateo'
         },
         special_instructions: 'Need it for weekend match, can pay rush fee',
-        preferred_completion_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
-        estimated_price_cents: 4600
+        estimated_price_cents: 4600,
+        final_price_cents: 4600,
+        tip_cents: 0,
+        completion_photo_url: 'https://images.unsplash.com/photo-1617883861509-c1625f2c0b5f?w=800&h=600&fit=crop',
+        completed_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
       },
       {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[3]?.id,
         status: 'pending',
-        racket_photo_url: 'https://placehold.co/800x600/png?text=Prince+Textreme',
+        racket_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
         service_type: 'full_service',
         string_selection: {
           brand: 'Babolat',
@@ -536,6 +545,185 @@ async function seedData() {
         },
         special_instructions: 'Looking for quick turnaround',
         estimated_price_cents: 4200
+      },
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[1]?.id,
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861653-c8c0de9aa87d?w=800&h=600&fit=crop',
+        service_type: 'restring_only',
+        string_selection: {
+          brand: 'Tecnifibre',
+          model: 'Razor Code',
+          gauge: '17g',
+          price_cents: 1500
+        },
+        tension_mains_lbs: 53,
+        tension_crosses_lbs: 51,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Tennis Courts, Downtown'
+        },
+        estimated_price_cents: 3500
+      },
+      {
+        player_id: playerProfiles[1]?.id,
+        stringer_id: stringerProfiles[2]?.id,
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Wilson',
+          model: 'NXT',
+          gauge: '16g',
+          price_cents: 1200
+        },
+        tension_mains_lbs: 55,
+        tension_crosses_lbs: 55,
+        string_pattern: 'existing',
+        dropoff_method: {
+          method: 'Drop off at location',
+          details: 'My home address'
+        },
+        special_instructions: 'Please use overgrip',
+        estimated_price_cents: 3800
+      },
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[4]?.id,
+        status: 'in_progress',
+        racket_photo_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&h=600&fit=crop',
+        service_type: 'restring_only',
+        string_selection: {
+          brand: 'Luxilon',
+          model: '4G',
+          gauge: '17g',
+          price_cents: 1900
+        },
+        tension_mains_lbs: 52,
+        tension_crosses_lbs: 50,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Club Tennis Center'
+        },
+        estimated_price_cents: 4400,
+        accepted_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+      },
+      // Additional pending requests for Marco Rodriguez to test 3-request cap
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861744-87e9592e8e2d?w=800&h=600&fit=crop',
+        service_type: 'restring_only',
+        string_selection: {
+          brand: 'RPM Blast',
+          model: 'Babolat',
+          gauge: '17g',
+          price_cents: 1800
+        },
+        tension_mains_lbs: 55,
+        tension_crosses_lbs: 53,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Palo Alto Tennis Club'
+        },
+        special_instructions: 'Please call when ready for pickup',
+        estimated_price_cents: 4300
+      },
+      {
+        player_id: playerProfiles[1]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861509-c1625f2c0b5f?w=800&h=600&fit=crop',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Wilson',
+          model: 'Champions Choice',
+          gauge: '16g',
+          price_cents: 2500
+        },
+        tension_mains_lbs: 50,
+        tension_crosses_lbs: 48,
+        string_pattern: 'existing',
+        dropoff_method: {
+          method: 'Drop off at location',
+          details: 'My office - 555 Bryant St'
+        },
+        estimated_price_cents: 5500
+      },
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861744-87e9592e8e2d?w=800&h=600&fit=crop',
+        service_type: 'full_service',
+        string_selection: {
+          brand: 'Luxilon',
+          model: 'Element',
+          gauge: '16L',
+          price_cents: 2000
+        },
+        tension_mains_lbs: 54,
+        tension_crosses_lbs: 52,
+        string_pattern: 'ask_stringer',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Stanford University Tennis Courts'
+        },
+        special_instructions: 'Need both grip and grommets replaced',
+        preferred_time_slot: {
+          day: 'Saturday',
+          start: '10:00 AM',
+          end: '12:00 PM'
+        },
+        estimated_price_cents: 6200
+      },
+      {
+        player_id: playerProfiles[1]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861653-c8c0de9aa87d?w=800&h=600&fit=crop',
+        service_type: 'restring_only',
+        string_selection: {
+          brand: 'Yonex',
+          model: 'Poly Tour Pro',
+          gauge: '16g',
+          price_cents: 1700
+        },
+        tension_mains_lbs: 52,
+        tension_crosses_lbs: 50,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Downtown Tennis Center'
+        },
+        estimated_price_cents: 4200
+      },
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Tecnifibre',
+          model: 'Multifeel',
+          gauge: '16g',
+          price_cents: 1600
+        },
+        tension_mains_lbs: 56,
+        tension_crosses_lbs: 54,
+        string_pattern: 'existing',
+        dropoff_method: {
+          method: 'Drop off at location',
+          details: 'University Tennis Courts'
+        },
+        special_instructions: 'Tournament this weekend, rush if possible',
+        estimated_price_cents: 4100
       }
     ]
 
@@ -563,19 +751,55 @@ async function seedData() {
     if (completedError) {
       console.error('Error fetching completed requests:', completedError)
     } else {
-      for (const request of completedRequests) {
-        const { error: reviewError } = await supabase
+      const stringerReviews = [
+        { rating: 5, comment: 'Excellent work! Perfect tension and quick turnaround. My racket feels amazing!' },
+        { rating: 5, comment: 'Very professional and knowledgeable. The strings are perfect. Will definitely use again!' },
+        { rating: 4, comment: 'Good job overall. Racket plays well, just took a bit longer than expected.' },
+        { rating: 5, comment: 'Outstanding service! Best stringing job I\'ve had. Highly recommended!' },
+      ]
+
+      const playerReviews = [
+        { rating: 5, comment: 'Great player to work with! Clear communication and easy pickup/dropoff.' },
+        { rating: 5, comment: 'Very respectful and appreciative. Would love to string for them again!' },
+        { rating: 4, comment: 'Good communication. Pickup was smooth.' },
+        { rating: 5, comment: 'Excellent customer! On time and friendly.' },
+      ]
+
+      for (let i = 0; i < completedRequests.length; i++) {
+        const request = completedRequests[i]
+
+        // Player reviews stringer
+        const stringerReview = stringerReviews[i % stringerReviews.length]
+        const { error: stringerReviewError } = await supabase
           .from('reviews')
           .insert({
             request_id: request.id,
-            player_id: request.player_id,
-            stringer_id: request.stringer_id,
-            rating: 5,
-            comment: 'Great work! Quick turnaround and perfect tension. Highly recommend!'
+            reviewee_id: request.stringer_id,
+            reviewer_id: request.player_id,
+            review_type: 'stringer_review',
+            rating: stringerReview.rating,
+            comment: stringerReview.comment
           })
 
-        if (reviewError) {
-          console.error('Error creating review:', reviewError)
+        if (stringerReviewError) {
+          console.error('Error creating stringer review:', stringerReviewError)
+        }
+
+        // Stringer reviews player
+        const playerReview = playerReviews[i % playerReviews.length]
+        const { error: playerReviewError } = await supabase
+          .from('reviews')
+          .insert({
+            request_id: request.id,
+            reviewee_id: request.player_id,
+            reviewer_id: request.stringer_id,
+            review_type: 'player_review',
+            rating: playerReview.rating,
+            comment: playerReview.comment
+          })
+
+        if (playerReviewError) {
+          console.error('Error creating player review:', playerReviewError)
         }
       }
       console.log('✅ Created sample reviews')

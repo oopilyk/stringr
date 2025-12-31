@@ -7,14 +7,16 @@ import { Navigation } from '@/components/layout/navigation'
 import { StatusBadge, formatPrice } from '@stringr/ui'
 import { Button } from '@stringr/ui'
 import { DollarSign, Star, MessageSquare, CheckCircle, Activity, X } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export function DashboardPage() {
   const { profile, user } = useAuth()
   const supabase = createClient()
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
@@ -42,6 +44,29 @@ export function DashboardPage() {
   })
 
   const isStringer = !!stringerSettings
+
+  // Mark all pending requests as viewed when dashboard is accessed
+  useEffect(() => {
+    const markRequestsAsViewed = async () => {
+      if (!user?.id || !isStringer) return
+
+      const { error } = await supabase
+        .from('requests')
+        .update({ viewed_at: new Date().toISOString() })
+        .eq('stringer_id', user.id)
+        .eq('status', 'pending')
+        .is('viewed_at', null)
+
+      if (error) {
+        console.error('Error marking requests as viewed:', error)
+      } else {
+        // Invalidate the pending requests count query to update the badge
+        queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] })
+      }
+    }
+
+    markRequestsAsViewed()
+  }, [user?.id, isStringer, supabase, queryClient])
 
   // Fetch player's requests (requests they made)
   const { data: playerRequests = [], isLoading: playerLoading } = useQuery({
@@ -142,6 +167,16 @@ export function DashboardPage() {
   const activeStringerRequests = stringerRequests.filter(r =>
     ['accepted', 'in_progress'].includes(r.status)
   )
+  const completedStringerRequests = stringerRequests.filter(r => r.status === 'completed')
+
+  // Calculate stringer earnings
+  const totalEarnings = completedStringerRequests.reduce((sum, r) => {
+    const jobPrice = r.final_price_cents || r.estimated_price_cents || 0
+    const tip = r.tip_cents || 0
+    return sum + jobPrice + tip
+  }, 0)
+
+  const totalJobs = completedStringerRequests.length
 
   // Debug logging
   console.log('Dashboard Debug:', {
@@ -181,61 +216,103 @@ export function DashboardPage() {
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Activity className="h-6 w-6 text-blue-600" />
+        {/* Quick Stats - Stringer Only */}
+        {isStringer && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                  <Activity className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{pendingStringerRequests.length}</div>
+                  <div className="text-sm text-gray-600">Pending</div>
+                </div>
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{activeRequests.length}</div>
-            <div className="text-gray-600">Active Requests</div>
-          </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{activeStringerRequests.length}</div>
+                  <div className="text-sm text-gray-600">In Progress</div>
+                </div>
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{completedRequests.length}</div>
-            <div className="text-gray-600">Completed Jobs</div>
-          </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
+            <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{totalJobs}</div>
+                  <div className="text-sm text-gray-600">Completed</div>
+                </div>
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">
-              {formatPrice(
-                completedRequests.reduce((sum, r) => sum + (r.final_price_cents || r.estimated_price_cents || 0), 0)
-              )}
+
+            <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{formatPrice(totalEarnings)}</div>
+                  <div className="text-sm text-gray-600">Total Earned</div>
+                </div>
+              </div>
             </div>
-            <div className="text-gray-600">Total Spent</div>
           </div>
-        </div>
+        )}
 
         {/* Stringer: Pending Requests */}
         {isStringer && pendingStringerRequests.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Pending Requests ({pendingStringerRequests.length})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Pending Requests ({pendingStringerRequests.length})
+              </h2>
+              {pendingStringerRequests.length > 3 && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/requests')}
+                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                >
+                  View All Requests
+                </Button>
+              )}
+            </div>
             <div className="space-y-4">
-              {pendingStringerRequests.map((request: any) => (
+              {pendingStringerRequests.slice(0, 3).map((request: any) => (
                 <div
                   key={request.id}
                   className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border-l-4 border-yellow-400"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start space-x-4">
+                    {/* Player Avatar */}
+                    <Link href={`/stringer/${request.player_id}`}>
+                      <img
+                        src={request.player?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                        alt={request.player?.full_name || 'Player'}
+                        className="w-16 h-16 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                      />
+                    </Link>
+
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
                         <StatusBadge status={request.status} />
                         <h3 className="text-lg font-bold text-gray-900">
-                          New Request from {request.player?.full_name}
+                          New Request from{' '}
+                          <Link
+                            href={`/stringer/${request.player_id}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            {request.player?.full_name}
+                          </Link>
                         </h3>
                         <span className="text-xl font-bold text-green-600">
                           {formatPrice(request.estimated_price_cents)}
@@ -277,18 +354,19 @@ export function DashboardPage() {
                           </p>
                         </div>
                       )}
-                    </div>
 
-                    <div className="flex items-center space-x-3 ml-6">
-                      <Button
-                        variant="outline"
-                        className="border-2 hover:bg-gray-50"
-                      >
-                        View Details
-                      </Button>
-                      <Button className="bg-green-600 hover:bg-green-700">
-                        Accept
-                      </Button>
+                      <div className="flex items-center space-x-3 mt-4">
+                        <Button
+                          variant="outline"
+                          className="border-2 hover:bg-gray-50"
+                          onClick={() => router.push(`/request/${request.id}`)}
+                        >
+                          View Details
+                        </Button>
+                        <Button className="bg-green-600 hover:bg-green-700">
+                          Accept
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -387,11 +465,82 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Recent Completed */}
+        {/* Recently Completed */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Completed</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Recently Completed</h2>
 
-          {completedRequests.length === 0 ? (
+          {isStringer && completedStringerRequests.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {completedStringerRequests.slice(0, 6).map((request: any) => (
+                <div
+                  key={request.id}
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border-l-4 border-green-500"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <StatusBadge status={request.status} />
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900 capitalize">
+                        {request.service_type?.replace(/_/g, ' ')}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        for {request.player?.full_name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-green-600">
+                        {formatPrice(request.final_price_cents || request.estimated_price_cents)}
+                      </div>
+                      {request.tip_cents > 0 && (
+                        <div className="text-sm text-green-600 font-medium mt-1">
+                          + {formatPrice(request.tip_cents)} tip
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">String</span>
+                      <span className="font-medium text-gray-900">
+                        {request.string_selection?.brand} {request.string_selection?.model}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Tension</span>
+                      <span className="font-medium text-gray-900">
+                        M: {request.tension_mains_lbs} / C: {request.tension_crosses_lbs} lbs
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Completed</span>
+                      <span className="font-medium text-gray-700">
+                        {request.completed_at ? new Date(request.completed_at).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Total Earned</span>
+                      <span className="font-medium text-green-600">
+                        {formatPrice((request.final_price_cents || request.estimated_price_cents) + (request.tip_cents || 0))}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => router.push(`/request/${request.id}`)}
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : completedRequests.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg shadow">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-gray-400" />
