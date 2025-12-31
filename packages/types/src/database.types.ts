@@ -185,6 +185,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           completed_at: string | null
+          completion_photo_url: string | null
           created_at: string | null
           decline_reason: string | null
           declined_at: string | null
@@ -204,6 +205,7 @@ export type Database = {
           stringer_id: string
           tension_crosses_lbs: number
           tension_mains_lbs: number
+          tip_cents: number | null
           updated_at: string | null
           viewed_at: string | null
         }
@@ -212,6 +214,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
+          completion_photo_url?: string | null
           created_at?: string | null
           decline_reason?: string | null
           declined_at?: string | null
@@ -231,6 +234,7 @@ export type Database = {
           stringer_id: string
           tension_crosses_lbs: number
           tension_mains_lbs: number
+          tip_cents?: number | null
           updated_at?: string | null
           viewed_at?: string | null
         }
@@ -239,6 +243,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
+          completion_photo_url?: string | null
           created_at?: string | null
           decline_reason?: string | null
           declined_at?: string | null
@@ -258,6 +263,7 @@ export type Database = {
           stringer_id?: string
           tension_crosses_lbs?: number
           tension_mains_lbs?: number
+          tip_cents?: number | null
           updated_at?: string | null
           viewed_at?: string | null
         }

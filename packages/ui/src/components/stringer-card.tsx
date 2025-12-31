@@ -1,6 +1,6 @@
 import { Star, Clock, DollarSign, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader } from "./ui/card"
-import { cn, formatPrice, formatDuration, formatDistance } from "../lib/utils"
+import { cn, formatPrice, formatPriceValue, formatDuration, formatDistance } from "../lib/utils"
 import type { StringerSearchResult } from "@stringr/types"
 
 interface StringerCardProps {
@@ -69,9 +69,9 @@ export function StringerCard({ stringer, onViewProfile, className }: StringerCar
       <CardContent className="pt-0">
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 text-sm font-medium">
+            <div className="flex items-center justify-center space-x-1 text-sm font-medium text-green-600">
               <DollarSign className="w-4 h-4" />
-              <span>{formatPrice(settings.base_price_cents)}</span>
+              <span>{formatPriceValue(settings.base_price_cents)}</span>
             </div>
             <p className="text-xs text-muted-foreground">Base price</p>
           </div>

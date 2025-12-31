@@ -68,8 +68,13 @@ export function Navigation() {
   // Close search dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsSearchFocused(false)
+      const target = event.target as Node
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        // Only close if we're not clicking on a link or navigation element
+        const isNavigationClick = (event.target as HTMLElement).closest('a')
+        if (!isNavigationClick) {
+          setIsSearchFocused(false)
+        }
       }
     }
 

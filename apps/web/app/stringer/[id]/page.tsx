@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
@@ -24,6 +25,7 @@ export default function StringerProfileViewPage() {
   useEffect(() => {
     if (params.id) {
       loadStringerProfile(params.id as string)
+      loadReviews(params.id as string)
     }
   }, [params.id])
 
@@ -44,19 +46,40 @@ export default function StringerProfileViewPage() {
           .eq('id', stringerId)
           .single()
 
-        if (!settingsError && settingsData) {
-          // New users have no rating yet
-          const avgRating = 0
-          const reviewCount = 0
+        // Determine if this is a stringer or player based on settings
+        const isStringerProfile = !settingsError && settingsData
+        const reviewType = isStringerProfile ? 'stringer_review' : 'player_review'
 
+        // Fetch aggregated rating from user_ratings view
+        const { data: ratingData } = await supabase
+          .from('user_ratings')
+          .select('*')
+          .eq('user_id', stringerId)
+          .eq('review_type', reviewType)
+          .maybeSingle()
+
+        const rating = {
+          stringer_id: stringerId,
+          avg_rating: ratingData?.avg_rating || 0,
+          review_count: ratingData?.review_count || 0
+        }
+
+        if (!settingsError && settingsData) {
+          // User is a stringer
           setStringer({
             ...profileData,
             stringer_settings: settingsData,
-            rating: {
-              avg_rating: avgRating,
-              review_count: reviewCount
-            }
+            rating
           } as StringerSearchResult)
+          setIsLoading(false)
+          return
+        } else {
+          // User exists but is not a stringer - show basic profile with player rating
+          setStringer({
+            ...profileData,
+            stringer_settings: null,
+            rating
+          } as any)
           setIsLoading(false)
           return
         }
@@ -82,6 +105,63 @@ export default function StringerProfileViewPage() {
       }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadReviews = async (userId: string) => {
+    try {
+      // Fetch reviews for this user
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('reviewee_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (reviewsError) {
+        console.error('Error fetching reviews:', reviewsError)
+        return
+      }
+
+      if (!reviewsData || reviewsData.length === 0) {
+        setReviews([])
+        return
+      }
+
+      // Fetch reviewer profiles separately
+      const reviewerIds = reviewsData.map(r => r.reviewer_id)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', reviewerIds)
+
+      if (profilesError) {
+        console.error('Error fetching reviewer profiles:', profilesError)
+        setReviews(reviewsData) // Still set reviews even if profiles fail
+        return
+      }
+
+      // Combine reviews with reviewer profiles
+      const reviewsWithProfiles = reviewsData.map(review => ({
+        ...review,
+        reviewer: profilesData?.find(p => p.id === review.reviewer_id)
+      }))
+
+      setReviews(reviewsWithProfiles)
+
+      // Update the stringer's rating based on actual reviews
+      if (reviewsWithProfiles.length > 0) {
+        const avgRating = reviewsWithProfiles.reduce((sum, r) => sum + r.rating, 0) / reviewsWithProfiles.length
+        setStringer(prev => prev ? {
+          ...prev,
+          rating: {
+            stringer_id: userId,
+            avg_rating: avgRating,
+            review_count: reviewsWithProfiles.length
+          }
+        } : null)
+      }
+    } catch (error) {
+      console.error('Error loading reviews:', error)
     }
   }
 
@@ -266,9 +346,20 @@ export default function StringerProfileViewPage() {
             {/* Profile Info */}
             <div className="flex-1">
               <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {stringer.full_name}
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                    {stringer.full_name}
+                  </h1>
+                  {settings ? (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      Stringer
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      Player
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Stats Row - Instagram Style */}
@@ -335,15 +426,17 @@ export default function StringerProfileViewPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <Button
-                  onClick={() => router.push(`/request/new?stringer_id=${params.id}`)}
-                  className="flex-1 bg-primary hover:bg-primary/90"
-                >
-                  Request Service
-                </Button>
+                {settings && (
+                  <Button
+                    onClick={() => router.push(`/request/new?stringer_id=${params.id}`)}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    Request Service
+                  </Button>
+                )}
                 <Button
                   variant="outline"
-                  className="border-2"
+                  className={settings ? "border-2" : "border-2 flex-1"}
                   onClick={() => router.push(`/messages?stringer_id=${params.id}`)}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
@@ -354,7 +447,8 @@ export default function StringerProfileViewPage() {
           </div>
         </div>
 
-        {/* Pricing & Services Card */}
+        {/* Pricing & Services Card - Only show for stringers */}
+        {settings && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Pricing & Services</h2>
 
@@ -400,32 +494,35 @@ export default function StringerProfileViewPage() {
             </div>
           )}
         </div>
+        )}
 
-        {/* Racket Gallery - Instagram Style Grid */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center">
-              <Grid className="w-5 h-5 mr-2" />
-              Racket Gallery
-            </h2>
-          </div>
+        {/* Racket Gallery - Only show for stringers */}
+        {settings && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <Grid className="w-5 h-5 mr-2" />
+                Racket Gallery
+              </h2>
+            </div>
 
-          <div className="grid grid-cols-3 gap-1 md:gap-2">
-            {racketImages.map((image, index) => (
-              <div key={index} className="aspect-square relative group cursor-pointer overflow-hidden rounded-sm">
-                <img
-                  src={image}
-                  alt={`Racket ${index + 1}`}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
-              </div>
-            ))}
+            <div className="grid grid-cols-3 gap-1 md:gap-2">
+              {racketImages.map((image, index) => (
+                <div key={index} className="aspect-square relative group cursor-pointer overflow-hidden rounded-sm">
+                  <img
+                    src={image}
+                    alt={`Racket ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* String Inventory */}
-        {settings.string_inventory && Array.isArray(settings.string_inventory) && settings.string_inventory.length > 0 && (
+        {settings && settings.string_inventory && Array.isArray(settings.string_inventory) && settings.string_inventory.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">String Inventory</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -447,39 +544,63 @@ export default function StringerProfileViewPage() {
 
         {/* Reviews Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Reviews</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">
+            Reviews {reviews.length > 0 && `(${reviews.length})`}
+          </h2>
 
           {reviews.length === 0 ? (
             <div className="text-center py-12">
               <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">No reviews yet</p>
-              <p className="text-sm text-gray-400 mt-1">Be the first to book and review!</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {settings ? 'Be the first to book and review!' : 'No reviews from stringers yet'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {reviews.map((review) => (
                 <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-sm font-semibold">
-                          {review.player?.full_name?.[0] || 'U'}
-                        </span>
-                      </div>
+                    <Link href={`/stringer/${review.reviewer_id}`} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                      {review.reviewer?.avatar_url ? (
+                        <img
+                          src={review.reviewer.avatar_url}
+                          alt={review.reviewer.full_name || 'Reviewer'}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-sm font-semibold">
+                            {review.reviewer?.full_name?.[0] || 'U'}
+                          </span>
+                        </div>
+                      )}
                       <span className="font-semibold text-gray-900">
-                        {review.player?.full_name || 'Anonymous'}
+                        {review.reviewer?.full_name || 'Anonymous'}
                       </span>
-                    </div>
+                    </Link>
                     <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{review.rating}</span>
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < review.rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-gray-200 text-gray-200'
+                          }`}
+                        />
+                      ))}
                     </div>
                   </div>
                   {review.comment && (
-                    <p className="text-gray-700">{review.comment}</p>
+                    <p className="text-gray-700 mt-2">{review.comment}</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(review.created_at).toLocaleDateString()}
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(review.created_at).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
                   </p>
                 </div>
               ))}
@@ -489,7 +610,7 @@ export default function StringerProfileViewPage() {
       </main>
 
       {/* Create Request Dialog */}
-      {stringer && (
+      {stringer && stringer.stringer_settings && (
         <CreateRequestDialog
           stringer={stringer}
           isOpen={isRequestDialogOpen}
