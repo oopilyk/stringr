@@ -10,6 +10,8 @@ import { DollarSign, Star, MessageSquare, CheckCircle, Activity, X } from 'lucid
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ActiveJobCard } from '@/components/requests/active-job-card'
+import { PlayerActiveRequestCard } from '@/components/requests/player-active-request-card'
 
 export function DashboardPage() {
   const { profile, user } = useAuth()
@@ -66,6 +68,29 @@ export function DashboardPage() {
     }
 
     markRequestsAsViewed()
+  }, [user?.id, isStringer, supabase, queryClient])
+
+  // Subscribe to real-time updates for requests
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel('dashboard-requests')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'requests',
+        filter: isStringer ? `stringer_id=eq.${user.id}` : `player_id=eq.${user.id}`
+      }, () => {
+        // Invalidate queries to refetch data
+        queryClient.invalidateQueries({ queryKey: ['player-requests'] })
+        queryClient.invalidateQueries({ queryKey: ['stringer-requests'] })
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [user?.id, isStringer, supabase, queryClient])
 
   // Fetch player's requests (requests they made)
@@ -159,13 +184,13 @@ export function DashboardPage() {
   const isLoading = playerLoading
 
   const activeRequests = requests.filter(r =>
-    ['pending', 'accepted', 'in_progress'].includes(r.status)
+    ['pending', 'accepted', 'in_progress', 'ready_for_pickup'].includes(r.status)
   )
   const completedRequests = requests.filter(r => r.status === 'completed')
 
   const pendingStringerRequests = stringerRequests.filter(r => r.status === 'pending')
   const activeStringerRequests = stringerRequests.filter(r =>
-    ['accepted', 'in_progress'].includes(r.status)
+    ['accepted', 'in_progress', 'ready_for_pickup'].includes(r.status)
   )
   const completedStringerRequests = stringerRequests.filter(r => r.status === 'completed')
 
@@ -269,6 +294,30 @@ export function DashboardPage() {
           </div>
         )}
 
+        {/* Stringer: Active Job Card */}
+        {isStringer && activeStringerRequests.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Active Job</h2>
+            <ActiveJobCard
+              request={activeStringerRequests[0]}
+              player={activeStringerRequests[0].player}
+            />
+          </div>
+        )}
+
+        {/* Player: Active Request Card */}
+        {!isStringer && activeRequests.length > 0 && activeRequests[0].status !== 'pending' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {activeRequests[0].status === 'ready_for_pickup' ? 'Ready for Pickup' : 'Your Racket Status'}
+            </h2>
+            <PlayerActiveRequestCard
+              request={activeRequests[0]}
+              stringer={activeRequests[0].stringer || { full_name: 'Stringer' }}
+            />
+          </div>
+        )}
+
         {/* Stringer: Pending Requests */}
         {isStringer && pendingStringerRequests.length > 0 && (
           <div className="mb-8">
@@ -363,7 +412,10 @@ export function DashboardPage() {
                         >
                           View Details
                         </Button>
-                        <Button className="bg-green-600 hover:bg-green-700">
+                        <Button
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push(`/request/${request.id}`)}
+                        >
                           Accept
                         </Button>
                       </div>
@@ -454,7 +506,10 @@ export function DashboardPage() {
                         <MessageSquare className="w-4 h-4 mr-2" />
                         Message
                       </Button>
-                      <Button className="bg-primary hover:bg-primary/90">
+                      <Button
+                        className="bg-primary hover:bg-primary/90"
+                        onClick={() => router.push(`/request/${request.id}`)}
+                      >
                         View Details
                       </Button>
                     </div>

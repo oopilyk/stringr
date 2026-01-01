@@ -214,9 +214,15 @@ export const SearchStringersParamsSchema = z.object({
 });
 
 export interface StringerSearchResult extends Profile {
-  stringer_settings: StringerSettings;
+  stringer_settings: ExtendedStringerSettings;
   rating?: StringerRating;
   distance_km?: number;
+  // Profile fields from onboarding
+  years_experience?: number;
+  rackets_strung_count?: number;
+  certifications?: string[];
+  stringing_location?: string;
+  player_levels_served?: string[];
 }
 
 // Common racquet presets
@@ -354,6 +360,7 @@ export interface ExtendedStringerSettings extends StringerSettings {
   pricing_notes?: string;
   accepts_player_strings?: boolean;
   discount_bulk_jobs?: number;
+  flexible_availability?: boolean;
   onboarding_step?: number;
   onboarding_completed_at?: string;
 }

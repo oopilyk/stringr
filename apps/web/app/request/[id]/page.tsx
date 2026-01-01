@@ -5,10 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { Navigation } from '@/components/layout/navigation'
 import { Button } from '@stringr/ui'
 import { StatusBadge, formatPrice } from '@stringr/ui'
-import { ChevronLeft, Calendar, Clock, MapPin, MessageSquare, CheckCircle, XCircle, DollarSign } from 'lucide-react'
+import { ChevronLeft, Calendar, Clock, MapPin, MessageSquare, CheckCircle, XCircle, DollarSign, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import Link from 'next/link'
+import { StringingProgressPanel } from '@/components/requests/stringing-progress-panel'
+import { PlayerRequestStatus } from '@/components/requests/player-request-status'
+import { AcceptJobModal } from '@/components/requests/accept-job-modal'
 
 interface Request {
   id: string
@@ -75,6 +78,8 @@ export default function RequestDetailsPage() {
   const [request, setRequest] = useState<Request | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isAccepting, setIsAccepting] = useState(false)
+  const [showAcceptModal, setShowAcceptModal] = useState(false)
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -127,6 +132,32 @@ export default function RequestDetailsPage() {
 
     fetchRequest()
   }, [params.id, user?.id, supabase])
+
+  const handleAccept = async (acceptData: any) => {
+    try {
+      setIsAccepting(true)
+
+      const response = await fetch(`/api/requests/${params.id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(acceptData)
+      })
+
+      if (response.ok) {
+        // Force a full page reload to ensure dashboard updates with new data
+        window.location.href = '/dashboard'
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to accept request')
+      }
+    } catch (error) {
+      console.error('Error accepting request:', error)
+      alert('Failed to accept request')
+    } finally {
+      setIsAccepting(false)
+      setShowAcceptModal(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -432,12 +463,16 @@ export default function RequestDetailsPage() {
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Actions - Only show for pending requests */}
             {isStringer && request.status === 'pending' && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Actions</h2>
                 <div className="space-y-3">
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => setShowAcceptModal(true)}
+                    disabled={isAccepting}
+                  >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Accept Request
                   </Button>
@@ -453,6 +488,19 @@ export default function RequestDetailsPage() {
               </div>
             )}
 
+            {/* Stringing Workflow Progress - Show for accepted/in_progress requests (stringer view) */}
+            {isStringer && ['accepted', 'in_progress', 'ready_for_pickup'].includes(request.status) && (
+              <StringingProgressPanel request={request} isStringer={true} />
+            )}
+
+            {/* Player View - Show workflow progress for players */}
+            {isPlayer && ['accepted', 'in_progress', 'ready_for_pickup'].includes(request.status) && request.player && request.stringer && (
+              <PlayerRequestStatus
+                request={request}
+                stringer={{ id: request.stringer_id, full_name: request.stringer.full_name, avatar_url: null }}
+              />
+            )}
+
             {(isPlayer || (isStringer && request.status !== 'pending')) && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <Button variant="outline" className="w-full">
@@ -464,6 +512,16 @@ export default function RequestDetailsPage() {
           </div>
         </div>
       </main>
+
+      {/* Accept Job Modal */}
+      {showAcceptModal && request && (
+        <AcceptJobModal
+          request={request}
+          onAccept={handleAccept}
+          onCancel={() => setShowAcceptModal(false)}
+          isAccepting={isAccepting}
+        />
+      )}
     </div>
   )
 }

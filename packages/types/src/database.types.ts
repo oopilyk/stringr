@@ -34,34 +34,127 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          participant_one_id: string
+          participant_two_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          participant_one_id: string
+          participant_two_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          participant_one_id?: string
+          participant_two_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_participant_one_id_fkey"
+            columns: ["participant_one_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_participant_two_id_fkey"
+            columns: ["participant_two_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
+          conversation_id: string | null
           created_at: string | null
           id: string
-          request_id: string
+          request_id: string | null
           sender_id: string
         }
         Insert: {
           body: string
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
-          request_id: string
+          request_id?: string | null
           sender_id: string
         }
         Update: {
           body?: string
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
-          request_id?: string
+          request_id?: string | null
           sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          request_id: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          request_id: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          request_id?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
         ]
@@ -179,27 +272,95 @@ export type Database = {
           },
         ]
       }
+      request_state_changes: {
+        Row: {
+          changed_at: string | null
+          changed_by: string
+          from_status: string
+          id: string
+          metadata: Json | null
+          reason: string | null
+          request_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by: string
+          from_status: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          request_id: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string
+          from_status?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          request_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_state_changes_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_state_changes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requests: {
         Row: {
           accepted_at: string | null
+          actual_completion: string | null
+          actual_string_installed: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: string | null
           completed_at: string | null
+          completion_notes: string | null
           completion_photo_url: string | null
+          confirmed_string_brand: string | null
+          confirmed_string_model: string | null
+          confirmed_tension_crosses_lbs: number | null
+          confirmed_tension_mains_lbs: number | null
           created_at: string | null
           decline_reason: string | null
           declined_at: string | null
+          delay_reason: string | null
           dropoff_method: Json
+          estimated_completion: string | null
           estimated_price_cents: number
           final_price_cents: number | null
           id: string
+          is_paused: boolean | null
+          is_rush: boolean | null
+          pause_reason: string | null
+          paused_at: string | null
           player_id: string
           preferred_completion_date: string | null
           preferred_time_slot: Json | null
+          racket_count: number | null
           racket_photo_url: string
+          ready_at: string | null
+          resumed_at: string | null
+          rework_count: number | null
+          scheduled_at: string | null
           service_type: string
           special_instructions: string | null
           status: string
+          string_issue_notes: string | null
           string_pattern: string
           string_selection: Json
           stringer_id: string
@@ -208,27 +369,48 @@ export type Database = {
           tip_cents: number | null
           updated_at: string | null
           viewed_at: string | null
+          work_started_at: string | null
         }
         Insert: {
           accepted_at?: string | null
+          actual_completion?: string | null
+          actual_string_installed?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
+          completion_notes?: string | null
           completion_photo_url?: string | null
+          confirmed_string_brand?: string | null
+          confirmed_string_model?: string | null
+          confirmed_tension_crosses_lbs?: number | null
+          confirmed_tension_mains_lbs?: number | null
           created_at?: string | null
           decline_reason?: string | null
           declined_at?: string | null
+          delay_reason?: string | null
           dropoff_method: Json
+          estimated_completion?: string | null
           estimated_price_cents: number
           final_price_cents?: number | null
           id?: string
+          is_paused?: boolean | null
+          is_rush?: boolean | null
+          pause_reason?: string | null
+          paused_at?: string | null
           player_id: string
           preferred_completion_date?: string | null
           preferred_time_slot?: Json | null
+          racket_count?: number | null
           racket_photo_url: string
+          ready_at?: string | null
+          resumed_at?: string | null
+          rework_count?: number | null
+          scheduled_at?: string | null
           service_type: string
           special_instructions?: string | null
           status?: string
+          string_issue_notes?: string | null
           string_pattern: string
           string_selection: Json
           stringer_id: string
@@ -237,27 +419,48 @@ export type Database = {
           tip_cents?: number | null
           updated_at?: string | null
           viewed_at?: string | null
+          work_started_at?: string | null
         }
         Update: {
           accepted_at?: string | null
+          actual_completion?: string | null
+          actual_string_installed?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
+          completion_notes?: string | null
           completion_photo_url?: string | null
+          confirmed_string_brand?: string | null
+          confirmed_string_model?: string | null
+          confirmed_tension_crosses_lbs?: number | null
+          confirmed_tension_mains_lbs?: number | null
           created_at?: string | null
           decline_reason?: string | null
           declined_at?: string | null
+          delay_reason?: string | null
           dropoff_method?: Json
+          estimated_completion?: string | null
           estimated_price_cents?: number
           final_price_cents?: number | null
           id?: string
+          is_paused?: boolean | null
+          is_rush?: boolean | null
+          pause_reason?: string | null
+          paused_at?: string | null
           player_id?: string
           preferred_completion_date?: string | null
           preferred_time_slot?: Json | null
+          racket_count?: number | null
           racket_photo_url?: string
+          ready_at?: string | null
+          resumed_at?: string | null
+          rework_count?: number | null
+          scheduled_at?: string | null
           service_type?: string
           special_instructions?: string | null
           status?: string
+          string_issue_notes?: string | null
           string_pattern?: string
           string_selection?: Json
           stringer_id?: string
@@ -266,50 +469,58 @@ export type Database = {
           tip_cents?: number | null
           updated_at?: string | null
           viewed_at?: string | null
-        }
-        Relationships: []
-      }
-      reviews: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          id: string
-          player_id: string
-          rating: number
-          request_id: string
-          stringer_id: string
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string
-          player_id: string
-          rating: number
-          request_id: string
-          stringer_id: string
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string
-          player_id?: string
-          rating?: number
-          request_id?: string
-          stringer_id?: string
+          work_started_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "reviews_player_id_fkey"
-            columns: ["player_id"]
+            foreignKeyName: "requests_cancelled_by_fkey"
+            columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          request_id: string
+          review_type: string
+          reviewee_id: string
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          request_id: string
+          review_type: string
+          reviewee_id: string
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          request_id?: string
+          review_type?: string
+          reviewee_id?: string
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "reviews_stringer_id_fkey"
-            columns: ["stringer_id"]
+            foreignKeyName: "reviews_request_id_fkey"
+            columns: ["request_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
         ]
@@ -421,26 +632,85 @@ export type Database = {
           },
         ]
       }
-    }
-    Views: {
-      stringer_ratings: {
+      stringing_tasks: {
         Row: {
-          avg_rating: number | null
-          review_count: number | null
-          stringer_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          is_required: boolean | null
+          notes: string | null
+          pause_notes: string | null
+          paused_at: string | null
+          photo_url: string | null
+          redo_count: number | null
+          redo_reason: string | null
+          request_id: string
+          started_at: string | null
+          status: string
+          task_order: number
+          task_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          notes?: string | null
+          pause_notes?: string | null
+          paused_at?: string | null
+          photo_url?: string | null
+          redo_count?: number | null
+          redo_reason?: string | null
+          request_id: string
+          started_at?: string | null
+          status?: string
+          task_order?: number
+          task_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          notes?: string | null
+          pause_notes?: string | null
+          paused_at?: string | null
+          photo_url?: string | null
+          redo_count?: number | null
+          redo_reason?: string | null
+          request_id?: string
+          started_at?: string | null
+          status?: string
+          task_order?: number
+          task_type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "reviews_stringer_id_fkey"
-            columns: ["stringer_id"]
+            foreignKeyName: "stringing_tasks_request_id_fkey"
+            columns: ["request_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
         ]
       }
     }
+    Views: {
+      user_ratings: {
+        Row: {
+          avg_rating: number | null
+          review_count: number | null
+          review_type: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+    }
     Functions: {
+      all_required_tasks_completed: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
       calculate_distance: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
@@ -448,6 +718,41 @@ export type Database = {
       calculate_profile_completeness: {
         Args: { profile_id: string }
         Returns: number
+      }
+      calculate_request_progress: {
+        Args: { p_request_id: string }
+        Returns: number
+      }
+      can_start_task: {
+        Args: { p_task_id: string }
+        Returns: boolean
+      }
+      create_notification: {
+        Args: {
+          p_message: string
+          p_metadata?: Json
+          p_request_id: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      get_next_task: {
+        Args: { p_request_id: string }
+        Returns: string
+      }
+      get_or_create_conversation: {
+        Args: { user_one_id: string; user_two_id: string }
+        Returns: string
+      }
+      initialize_stringing_tasks: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      validate_request_state_transition: {
+        Args: { p_new_status: string; p_request_id: string }
+        Returns: boolean
       }
     }
     Enums: {

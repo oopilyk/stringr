@@ -178,6 +178,8 @@ export default function StringerProfileViewPage() {
         years_experience: 15,
         certifications: ['USRSA Master', 'ERSA Certified'],
         rackets_strung_count: 2500,
+        stringing_location: 'Tennis club',
+        player_levels_served: ['Intermediate', 'Advanced', 'Tournament', 'Professional'],
         stringer_settings: {
           id: '1',
           base_price_cents: 2500,
@@ -185,6 +187,20 @@ export default function StringerProfileViewPage() {
           accepts_rush: true,
           rush_fee_cents: 800,
           max_daily_jobs: 8,
+          pricing_notes: 'String cost not included. Natural gut available for +$15. Free grip replacement with stringing.',
+          discount_bulk_jobs: 10,
+          machine_brand: 'Babolat',
+          machine_model: 'Star 5',
+          machine_type: 'electronic',
+          max_tension: 80,
+          supported_racket_types: ['Tennis', 'Badminton', 'Squash'],
+          accepts_player_strings: true,
+          flexible_availability: false,
+          dropoff_methods: [
+            { method: 'meetup', enabled: true, details: 'Can meet at local tennis courts or coffee shops in Baltimore area' },
+            { method: 'pickup', enabled: true, details: 'Free pickup within 10 miles, $5 fee for 10-20 miles' },
+            { method: 'dropbox', enabled: true, details: 'Available at Baltimore Tennis Club, 123 Court St, 9am-8pm daily' }
+          ],
           services: [
             { name: 'Standard Restring', price_cents: 2500 },
             { name: 'Premium String', price_cents: 3500 },
@@ -195,7 +211,14 @@ export default function StringerProfileViewPage() {
             { brand: 'Babolat', model: 'RPM Blast', gauge: '17', price_cents: 1600 },
             { brand: 'Wilson', model: 'NXT', gauge: '16', price_cents: 1200 }
           ],
-          availability: []
+          availability: [
+            { dow: 1, start: '17:00', end: '21:00' },
+            { dow: 2, start: '17:00', end: '21:00' },
+            { dow: 3, start: '17:00', end: '21:00' },
+            { dow: 4, start: '17:00', end: '21:00' },
+            { dow: 6, start: '09:00', end: '17:00' },
+            { dow: 0, start: '09:00', end: '17:00' }
+          ]
         },
         rating: {
           stringer_id: '1',
@@ -213,6 +236,8 @@ export default function StringerProfileViewPage() {
         years_experience: 10,
         certifications: ['USRSA Certified'],
         rackets_strung_count: 1800,
+        stringing_location: 'Home shop',
+        player_levels_served: ['Beginner', 'Intermediate', 'Advanced', 'Tournament'],
         stringer_settings: {
           id: '2',
           base_price_cents: 3000,
@@ -220,6 +245,20 @@ export default function StringerProfileViewPage() {
           accepts_rush: true,
           rush_fee_cents: 1000,
           max_daily_jobs: 6,
+          pricing_notes: 'Same-day service available! String cost separate. Premium strings in stock.',
+          discount_bulk_jobs: 15,
+          machine_brand: 'Gamma',
+          machine_model: 'X-6FC',
+          machine_type: 'crank',
+          max_tension: 75,
+          supported_racket_types: ['Tennis', 'Squash'],
+          accepts_player_strings: true,
+          flexible_availability: false,
+          dropoff_methods: [
+            { method: 'meetup', enabled: true, details: 'Happy to meet at local parks or tennis facilities' },
+            { method: 'ship', enabled: true, details: 'USPS Priority Mail return shipping included in price' },
+            { method: 'dropbox', enabled: true, details: '456 Elm Ave, secure lockbox available 24/7' }
+          ],
           services: [
             { name: 'Express Restring', price_cents: 3000 },
             { name: 'Tournament Prep', price_cents: 4500 },
@@ -229,7 +268,13 @@ export default function StringerProfileViewPage() {
             { brand: 'Solinco', model: 'Tour Bite', gauge: '17', price_cents: 1400 },
             { brand: 'Technifibre', model: 'Black Code', gauge: '16', price_cents: 1500 }
           ],
-          availability: []
+          availability: [
+            { dow: 1, start: '18:00', end: '20:00' },
+            { dow: 3, start: '18:00', end: '20:00' },
+            { dow: 5, start: '18:00', end: '20:00' },
+            { dow: 6, start: '10:00', end: '18:00' },
+            { dow: 0, start: '10:00', end: '18:00' }
+          ]
         },
         rating: {
           stringer_id: '2',
@@ -245,8 +290,10 @@ export default function StringerProfileViewPage() {
         lat: 39.2704,
         lng: -76.6522,
         years_experience: 5,
-        certifications: [],
+        certifications: ['Self-taught'],
         rackets_strung_count: 650,
+        stringing_location: 'Mobile service',
+        player_levels_served: ['Beginner', 'Intermediate'],
         stringer_settings: {
           id: '3',
           base_price_cents: 2000,
@@ -254,6 +301,19 @@ export default function StringerProfileViewPage() {
           accepts_rush: false,
           rush_fee_cents: 0,
           max_daily_jobs: 4,
+          pricing_notes: 'Best rates in town! Strings available at cost. Weekend appointments preferred.',
+          discount_bulk_jobs: 5,
+          machine_brand: 'Prince',
+          machine_model: 'Neos 1000',
+          machine_type: 'drop-weight',
+          max_tension: 70,
+          supported_racket_types: ['Tennis', 'Badminton'],
+          accepts_player_strings: true,
+          flexible_availability: true,
+          dropoff_methods: [
+            { method: 'meetup', enabled: true, details: 'Flexible meeting locations throughout Baltimore' },
+            { method: 'pickup', enabled: true, details: 'Free pickup anywhere in Baltimore city limits' }
+          ],
           services: [
             { name: 'Basic Restring', price_cents: 2000 },
             { name: 'Synthetic Gut', price_cents: 2200 },
@@ -437,7 +497,27 @@ export default function StringerProfileViewPage() {
                 <Button
                   variant="outline"
                   className={settings ? "border-2" : "border-2 flex-1"}
-                  onClick={() => router.push(`/messages?stringer_id=${params.id}`)}
+                  onClick={async () => {
+                    try {
+                      // Create or get conversation with this user
+                      const response = await fetch('/api/conversations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ otherUserId: params.id })
+                      })
+
+                      if (response.ok) {
+                        const { conversationId } = await response.json()
+                        router.push(`/messages?conversation=${conversationId}`)
+                      } else {
+                        console.error('Failed to create conversation')
+                        router.push('/messages')
+                      }
+                    } catch (error) {
+                      console.error('Error creating conversation:', error)
+                      router.push('/messages')
+                    }
+                  }}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Message
@@ -479,6 +559,20 @@ export default function StringerProfileViewPage() {
             </div>
           </div>
 
+          {/* Pricing Notes */}
+          {settings.pricing_notes && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900"><span className="font-semibold">Pricing Notes:</span> {settings.pricing_notes}</p>
+            </div>
+          )}
+
+          {/* Bulk Discount */}
+          {settings.discount_bulk_jobs && settings.discount_bulk_jobs > 0 && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-900"><span className="font-semibold">Bulk Discount:</span> {settings.discount_bulk_jobs}% off for 3+ rackets</p>
+            </div>
+          )}
+
           {/* Services List */}
           {settings.services && Array.isArray(settings.services) && settings.services.length > 0 && (
             <div>
@@ -494,6 +588,163 @@ export default function StringerProfileViewPage() {
             </div>
           )}
         </div>
+        )}
+
+        {/* Equipment & Capabilities - Only show for stringers */}
+        {settings && (settings.machine_brand || settings.machine_model || settings.max_tension || (settings.supported_racket_types && settings.supported_racket_types.length > 0)) && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Equipment & Capabilities</h2>
+
+            <div className="space-y-4">
+              {/* Machine Details */}
+              {(settings.machine_brand || settings.machine_model || settings.machine_type) && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-2">Stringing Machine</h3>
+                  <div className="space-y-1 text-sm text-gray-700">
+                    {settings.machine_brand && (
+                      <p><span className="font-medium">Brand:</span> {settings.machine_brand}</p>
+                    )}
+                    {settings.machine_model && (
+                      <p><span className="font-medium">Model:</span> {settings.machine_model}</p>
+                    )}
+                    {settings.machine_type && (
+                      <p><span className="font-medium">Type:</span> {settings.machine_type.charAt(0).toUpperCase() + settings.machine_type.slice(1)}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Max Tension */}
+              {settings.max_tension && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">Maximum Tension:</span> {settings.max_tension} lbs
+                  </p>
+                </div>
+              )}
+
+              {/* Supported Racket Types */}
+              {settings.supported_racket_types && settings.supported_racket_types.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Racket Types Serviced</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {settings.supported_racket_types.map((type: string, i: number) => (
+                      <span key={i} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Background Details - Only show for stringers */}
+        {settings && (stringer.stringing_location || (stringer.player_levels_served && stringer.player_levels_served.length > 0)) && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Background & Expertise</h2>
+
+            <div className="space-y-4">
+              {/* Stringing Location */}
+              {stringer.stringing_location && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Stringing Location:</span> {stringer.stringing_location}
+                  </p>
+                </div>
+              )}
+
+              {/* Player Levels Served */}
+              {stringer.player_levels_served && stringer.player_levels_served.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Player Levels Served</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {stringer.player_levels_served.map((level: string, i: number) => (
+                      <span key={i} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-100 text-indigo-800">
+                        {level}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Availability & Logistics - Only show for stringers */}
+        {settings && ((settings.dropoff_methods && settings.dropoff_methods.length > 0) || settings.max_daily_jobs || (settings.availability && settings.availability.length > 0) || settings.flexible_availability) && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Availability & Logistics</h2>
+
+            <div className="space-y-4">
+              {/* Dropoff Methods */}
+              {settings.dropoff_methods && settings.dropoff_methods.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Dropoff Options</h3>
+                  <div className="space-y-2">
+                    {settings.dropoff_methods.map((method: any, i: number) => (
+                      <div key={i} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900 capitalize">
+                            {method.method === 'meetup' && '🤝 Meet-up'}
+                            {method.method === 'pickup' && '🚗 Pick-up'}
+                            {method.method === 'ship' && '📦 Shipping'}
+                            {method.method === 'dropbox' && '📮 Drop-box'}
+                          </span>
+                        </div>
+                        {method.details && (
+                          <p className="text-sm text-gray-600 mt-1">{method.details}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Player Strings Acceptance */}
+              {settings.accepts_player_strings !== undefined && (
+                <div className={`p-4 rounded-lg ${settings.accepts_player_strings ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                  <p className={`text-sm ${settings.accepts_player_strings ? 'text-green-900' : 'text-gray-700'}`}>
+                    <span className="font-semibold">Player-Provided Strings:</span> {settings.accepts_player_strings ? '✓ Accepted' : '✗ Not accepted'}
+                  </p>
+                </div>
+              )}
+
+              {/* Flexible Availability or Schedule */}
+              {settings.flexible_availability ? (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">⏰ Flexible Availability:</span> Dropoffs accepted at any time
+                  </p>
+                </div>
+              ) : settings.availability && settings.availability.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Weekly Availability</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {settings.availability.map((block: any, i: number) => {
+                      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                      return (
+                        <div key={i} className="p-3 bg-gray-50 rounded-lg text-sm">
+                          <span className="font-medium text-gray-900">{days[block.dow]}:</span>{' '}
+                          <span className="text-gray-700">{block.start} - {block.end}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Max Daily Jobs */}
+              {settings.max_daily_jobs && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Maximum Daily Jobs:</span> {settings.max_daily_jobs} rackets per day
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Racket Gallery - Only show for stringers */}

@@ -30,41 +30,55 @@ async function seedData() {
         password: 'password123',
         profile: {
           full_name: 'Marco Rodriguez',
-          bio: '10+ years stringing experience. Former college player, specializes in poly and natural gut hybrids.',
+          bio: 'Professional tennis stringer with 15+ years experience. Former college player and certified Master Racquet Technician.',
           city: 'Baltimore',
           lat: 39.2904,
           lng: -76.6122,
           phone: '+1 (555) 123-4567',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marco'
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marco',
+          years_experience: 15,
+          rackets_strung_count: 2500,
+          certifications: ['USRSA Master', 'ERSA Certified'],
+          stringing_location: 'Tennis club',
+          player_levels_served: ['Intermediate', 'Advanced', 'Tournament', 'Professional']
         },
         settings: {
           base_price_cents: 2500, // $25
           turnaround_hours: 24,
           accepts_rush: true,
-          rush_fee_cents: 1000, // $10
-          max_daily_jobs: 6,
+          rush_fee_cents: 800, // $8
+          max_daily_jobs: 8,
           flexible_availability: false,
+          pricing_notes: 'String cost not included. Natural gut available for +$15. Free grip replacement with stringing.',
+          discount_bulk_jobs: 10,
+          machine_brand: 'Babolat',
+          machine_model: 'Star 5',
+          machine_type: 'electronic',
+          max_tension: 80,
+          supported_racket_types: ['Tennis', 'Badminton', 'Squash'],
+          accepts_player_strings: true,
           string_inventory: [
-            { brand: 'Babolat', model: 'RPM Blast', gauge: '17g', quantity: 10, price_cents: 1800 },
-            { brand: 'Solinco', model: 'Hyper-G', gauge: '17g', quantity: 8, price_cents: 1600 },
-            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 6, price_cents: 2200 },
+            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 10, price_cents: 1800 },
+            { brand: 'Babolat', model: 'RPM Blast', gauge: '17g', quantity: 8, price_cents: 1600 },
+            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 6, price_cents: 1200 },
           ],
           dropoff_methods: [
-            { method: 'Meet at location', details: 'I can meet you at local tennis courts' },
-            { method: 'Drop off at location', details: 'Drop off at my home - address provided after booking' }
+            { method: 'meetup', enabled: true, details: 'Can meet at local tennis courts or coffee shops in Baltimore area' },
+            { method: 'pickup', enabled: true, details: 'Free pickup within 10 miles, $5 fee for 10-20 miles' },
+            { method: 'dropbox', enabled: true, details: 'Available at Baltimore Tennis Club, 123 Court St, 9am-8pm daily' }
           ],
           services: [
-            { name: 'Restring', price_cents: 2500 },
-            { name: 'Restring + Grip', price_cents: 3500 },
-            { name: 'Grip Only', price_cents: 1500 }
+            { name: 'Standard Restring', price_cents: 2500 },
+            { name: 'Premium String', price_cents: 3500 },
+            { name: 'Hybrid Setup', price_cents: 4000 }
           ],
           availability: [
-            { dow: 1, start: '09:00', end: '18:00' }, // Monday
-            { dow: 2, start: '09:00', end: '18:00' }, // Tuesday
-            { dow: 3, start: '09:00', end: '18:00' }, // Wednesday
-            { dow: 4, start: '09:00', end: '18:00' }, // Thursday
-            { dow: 5, start: '09:00', end: '20:00' }, // Friday
-            { dow: 6, start: '08:00', end: '16:00' }, // Saturday
+            { dow: 1, start: '17:00', end: '21:00' }, // Monday
+            { dow: 2, start: '17:00', end: '21:00' }, // Tuesday
+            { dow: 3, start: '17:00', end: '21:00' }, // Wednesday
+            { dow: 4, start: '17:00', end: '21:00' }, // Thursday
+            { dow: 6, start: '09:00', end: '17:00' }, // Saturday
+            { dow: 0, start: '09:00', end: '17:00' }, // Sunday
           ]
         }
       },
@@ -74,39 +88,53 @@ async function seedData() {
         password: 'password123',
         profile: {
           full_name: 'Sarah Chen',
-          bio: 'Professional racquet technician. Quick turnaround, attention to detail. Available weekends!',
+          bio: 'Tennis coach and certified stringer specializing in high-performance strings. Quick turnaround and competitive pricing.',
           city: 'Towson',
           lat: 39.4011,
           lng: -76.6012,
           phone: '+1 (555) 234-5678',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+          years_experience: 10,
+          rackets_strung_count: 1800,
+          certifications: ['USRSA Certified'],
+          stringing_location: 'Home shop',
+          player_levels_served: ['Beginner', 'Intermediate', 'Advanced', 'Tournament']
         },
         settings: {
           base_price_cents: 3000, // $30
           turnaround_hours: 12,
           accepts_rush: true,
-          rush_fee_cents: 1500, // $15
-          max_daily_jobs: 4,
+          rush_fee_cents: 1000, // $10
+          max_daily_jobs: 6,
           flexible_availability: false,
+          pricing_notes: 'Same-day service available! String cost separate. Premium strings in stock.',
+          discount_bulk_jobs: 15,
+          machine_brand: 'Gamma',
+          machine_model: 'X-6FC',
+          machine_type: 'crank',
+          max_tension: 75,
+          supported_racket_types: ['Tennis', 'Squash'],
+          accepts_player_strings: true,
           string_inventory: [
-            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 12, price_cents: 2200 },
-            { brand: 'Tecnifibre', model: 'ATP Razor Code', gauge: '17g', quantity: 8, price_cents: 1500 },
-            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 6, price_cents: 1200 },
+            { brand: 'Solinco', model: 'Tour Bite', gauge: '17g', quantity: 12, price_cents: 1400 },
+            { brand: 'Tecnifibre', model: 'Black Code', gauge: '16g', quantity: 8, price_cents: 1500 },
           ],
           dropoff_methods: [
-            { method: 'Meet at location', details: 'Available weekends at local parks' },
-            { method: 'Drop off at location', details: 'Home address provided after confirmation' }
+            { method: 'meetup', enabled: true, details: 'Happy to meet at local parks or tennis facilities' },
+            { method: 'ship', enabled: true, details: 'USPS Priority Mail return shipping included in price' },
+            { method: 'dropbox', enabled: true, details: '456 Elm Ave, secure lockbox available 24/7' }
           ],
           services: [
-            { name: 'Premium Restring', price_cents: 3000 },
-            { name: 'Premium + Grip', price_cents: 4200 },
-            { name: 'String Analysis', price_cents: 500 }
+            { name: 'Express Restring', price_cents: 3000 },
+            { name: 'Tournament Prep', price_cents: 4500 },
+            { name: 'String Consultation', price_cents: 5000 }
           ],
           availability: [
-            { dow: 0, start: '10:00', end: '16:00' }, // Sunday
-            { dow: 3, start: '17:00', end: '21:00' }, // Wednesday evening
-            { dow: 5, start: '17:00', end: '21:00' }, // Friday evening
-            { dow: 6, start: '08:00', end: '18:00' }, // Saturday
+            { dow: 1, start: '18:00', end: '20:00' }, // Monday
+            { dow: 3, start: '18:00', end: '20:00' }, // Wednesday
+            { dow: 5, start: '18:00', end: '20:00' }, // Friday
+            { dow: 6, start: '10:00', end: '18:00' }, // Saturday
+            { dow: 0, start: '10:00', end: '18:00' }, // Sunday
           ]
         }
       },
@@ -116,40 +144,47 @@ async function seedData() {
         password: 'password123',
         profile: {
           full_name: 'David Park',
-          bio: 'Budget-friendly option. Good for recreational players. Same-day service available.',
+          bio: 'Budget-friendly stringing service. Great for recreational players. Available weekends and evenings.',
           city: 'Columbia',
           lat: 39.2414,
           lng: -76.8610,
           phone: '+1 (555) 345-6789',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David'
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+          years_experience: 5,
+          rackets_strung_count: 650,
+          certifications: ['Self-taught'],
+          stringing_location: 'Mobile service',
+          player_levels_served: ['Beginner', 'Intermediate']
         },
         settings: {
           base_price_cents: 2000, // $20
           turnaround_hours: 48,
           accepts_rush: false,
           rush_fee_cents: 0,
-          max_daily_jobs: 8,
-          flexible_availability: false,
+          max_daily_jobs: 4,
+          flexible_availability: true,
+          pricing_notes: 'Best rates in town! Strings available at cost. Weekend appointments preferred.',
+          discount_bulk_jobs: 5,
+          machine_brand: 'Prince',
+          machine_model: 'Neos 1000',
+          machine_type: 'drop-weight',
+          max_tension: 70,
+          supported_racket_types: ['Tennis', 'Badminton'],
+          accepts_player_strings: true,
           string_inventory: [
-            { brand: 'Tecnifibre', model: 'ATP Razor Code', gauge: '17g', quantity: 15, price_cents: 1500 },
-            { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 10, price_cents: 1200 },
-            { brand: 'Gamma', model: 'Zo', gauge: '17g', quantity: 8, price_cents: 1000 },
+            { brand: 'Prince', model: 'Synthetic Gut', gauge: '16g', quantity: 15, price_cents: 800 },
+            { brand: 'Gamma', model: 'TNT2', gauge: '17g', quantity: 10, price_cents: 900 },
           ],
           dropoff_methods: [
-            { method: 'Drop off at location', details: 'Evening drop-off available - address on confirmation' },
-            { method: 'Mail service', details: 'Pre-paid shipping label provided' }
+            { method: 'meetup', enabled: true, details: 'Flexible meeting locations throughout Columbia area' },
+            { method: 'pickup', enabled: true, details: 'Free pickup anywhere in Columbia and surrounding areas' }
           ],
           services: [
             { name: 'Basic Restring', price_cents: 2000 },
-            { name: 'Restring + Basic Grip', price_cents: 2800 }
+            { name: 'Synthetic Gut', price_cents: 2200 },
+            { name: 'Multifilament', price_cents: 2800 }
           ],
-          availability: [
-            { dow: 1, start: '18:00', end: '22:00' }, // Monday evening
-            { dow: 2, start: '18:00', end: '22:00' }, // Tuesday evening
-            { dow: 4, start: '18:00', end: '22:00' }, // Thursday evening
-            { dow: 6, start: '09:00', end: '17:00' }, // Saturday
-            { dow: 0, start: '12:00', end: '18:00' }, // Sunday afternoon
-          ]
+          availability: []
         }
       },
       {
@@ -163,7 +198,12 @@ async function seedData() {
           lat: 39.0840,
           lng: -77.1528,
           phone: '+1 (555) 456-7890',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa'
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa',
+          years_experience: 7,
+          rackets_strung_count: 950,
+          certifications: ['USRSA Certified'],
+          stringing_location: 'Mobile service',
+          player_levels_served: ['Beginner', 'Intermediate', 'Junior']
         },
         settings: {
           base_price_cents: 2800, // $28
@@ -172,14 +212,22 @@ async function seedData() {
           rush_fee_cents: 500, // $5
           max_daily_jobs: 10,
           flexible_availability: true,
+          pricing_notes: 'Mobile service - I come to you! Free travel within 15 miles. Juniors get 10% off.',
+          discount_bulk_jobs: 12,
+          machine_brand: 'Gamma',
+          machine_model: 'Progression II',
+          machine_type: 'crank',
+          max_tension: 72,
+          supported_racket_types: ['Tennis'],
+          accepts_player_strings: true,
           string_inventory: [
             { brand: 'Babolat', model: 'Xcel', gauge: '16g', quantity: 20, price_cents: 1400 },
             { brand: 'Gamma', model: 'Zo', gauge: '17g', quantity: 12, price_cents: 1000 },
             { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 10, price_cents: 1200 },
           ],
           dropoff_methods: [
-            { method: 'Mobile service - I come to you', details: 'Available within 15 mile radius of Rockville' },
-            { method: 'Meet at location', details: 'Can meet at local tennis courts or parks' }
+            { method: 'pickup', enabled: true, details: 'Mobile service - I come to you! Available within 15 mile radius of Rockville' },
+            { method: 'meetup', enabled: true, details: 'Can meet at local tennis courts or parks' }
           ],
           services: [
             { name: 'Mobile Service', price_cents: 2800 },
@@ -206,7 +254,12 @@ async function seedData() {
           lat: 38.9784,
           lng: -76.4922,
           phone: '+1 (555) 567-8901',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex'
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+          years_experience: 20,
+          rackets_strung_count: 4200,
+          certifications: ['USRSA Master', 'MRT - Master Racquet Technician'],
+          stringing_location: 'Professional studio',
+          player_levels_served: ['Advanced', 'Tournament', 'Professional']
         },
         settings: {
           base_price_cents: 3500, // $35
@@ -215,14 +268,22 @@ async function seedData() {
           rush_fee_cents: 1200, // $12
           max_daily_jobs: 5,
           flexible_availability: false,
+          pricing_notes: 'Premium service for serious players. Natural gut specialist. String consultation included.',
+          discount_bulk_jobs: 8,
+          machine_brand: 'Babolat',
+          machine_model: 'Star 7',
+          machine_type: 'electronic',
+          max_tension: 85,
+          supported_racket_types: ['Tennis', 'Squash'],
+          accepts_player_strings: false,
           string_inventory: [
             { brand: 'Babolat', model: 'Natural Gut', gauge: '16g', quantity: 4, price_cents: 4500 },
             { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', quantity: 8, price_cents: 2200 },
             { brand: 'Solinco', model: 'Tour Bite', gauge: '17g', quantity: 6, price_cents: 1700 },
           ],
           dropoff_methods: [
-            { method: 'Drop off at location', details: 'Professional studio - address shared after booking' },
-            { method: 'Meet at location', details: 'Available at select tournaments and clubs' }
+            { method: 'dropbox', enabled: true, details: 'Professional studio - address shared after booking' },
+            { method: 'meetup', enabled: true, details: 'Available at select tournaments and clubs' }
           ],
           services: [
             { name: 'Pro Restring', price_cents: 3500 },
@@ -248,7 +309,12 @@ async function seedData() {
           lat: 38.9906,
           lng: -77.0261,
           phone: '+1 (555) 678-9012',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike'
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
+          years_experience: 20,
+          rackets_strung_count: 5800,
+          certifications: ['USRSA Certified', 'ERSA Certified'],
+          stringing_location: 'Tennis shop',
+          player_levels_served: ['Beginner', 'Intermediate', 'Advanced']
         },
         settings: {
           base_price_cents: 2700, // $27
@@ -257,6 +323,14 @@ async function seedData() {
           rush_fee_cents: 700, // $7
           max_daily_jobs: 12,
           flexible_availability: false,
+          pricing_notes: 'Full pro shop services. Volume discounts available. String and labor package deals.',
+          discount_bulk_jobs: 20,
+          machine_brand: 'Wise',
+          machine_model: '2086',
+          machine_type: 'electronic',
+          max_tension: 78,
+          supported_racket_types: ['Tennis', 'Badminton', 'Squash', 'Racquetball'],
+          accepts_player_strings: true,
           string_inventory: [
             { brand: 'Babolat', model: 'RPM Blast', gauge: '17g', quantity: 25, price_cents: 1800 },
             { brand: 'Wilson', model: 'NXT', gauge: '16g', quantity: 20, price_cents: 1200 },
@@ -264,8 +338,8 @@ async function seedData() {
             { brand: 'Head', model: 'Velocity MLT', gauge: '17g', quantity: 12, price_cents: 1300 },
           ],
           dropoff_methods: [
-            { method: 'Drop off at shop', details: '123 Tennis Court Lane, Silver Spring MD - Open 9am-7pm weekdays' },
-            { method: 'Pick up from location', details: 'Free pickup within 10 miles' }
+            { method: 'dropbox', enabled: true, details: '123 Tennis Court Lane, Silver Spring MD - Open 9am-7pm weekdays' },
+            { method: 'pickup', enabled: true, details: 'Free pickup within 10 miles' }
           ],
           services: [
             { name: 'Shop Service', price_cents: 2700 },
@@ -609,31 +683,83 @@ async function seedData() {
           details: 'Club Tennis Center'
         },
         estimated_price_cents: 4400,
-        accepted_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+        accepted_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        work_started_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+        estimated_completion: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString() // Tomorrow
       },
-      // Additional pending requests for Marco Rodriguez to test 3-request cap
+      // Pending request for Marco - so he can test accepting it
       {
-        player_id: playerProfiles[0]?.id,
-        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
+        player_id: playerProfiles[1]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco
         status: 'pending',
-        racket_photo_url: 'https://images.unsplash.com/photo-1617883861744-87e9592e8e2d?w=800&h=600&fit=crop',
+        racket_photo_url: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop',
         service_type: 'restring_only',
         string_selection: {
-          brand: 'RPM Blast',
-          model: 'Babolat',
+          brand: 'Babolat',
+          model: 'RPM Blast',
           gauge: '17g',
           price_cents: 1800
         },
-        tension_mains_lbs: 55,
-        tension_crosses_lbs: 53,
+        tension_mains_lbs: 56,
+        tension_crosses_lbs: 56,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Drop off at location',
+          details: 'My shop, 123 Tennis Lane'
+        },
+        estimated_price_cents: 4300
+      },
+      // Another pending request for Marco
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[0]?.id, // Marco
+        status: 'pending',
+        racket_photo_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&h=600&fit=crop',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Luxilon',
+          model: '4G',
+          gauge: '16g',
+          price_cents: 2000
+        },
+        tension_mains_lbs: 54,
+        tension_crosses_lbs: 52,
         string_pattern: 'two_piece',
         dropoff_method: {
           method: 'Meet at location',
-          details: 'Palo Alto Tennis Club'
+          details: 'Community Tennis Courts'
         },
-        special_instructions: 'Please call when ready for pickup',
-        estimated_price_cents: 4300
+        special_instructions: 'Need it done within 48 hours if possible',
+        estimated_price_cents: 4500
       },
+      // Ready for pickup request
+      {
+        player_id: playerProfiles[0]?.id,
+        stringer_id: stringerProfiles[1]?.id,
+        status: 'ready_for_pickup',
+        racket_photo_url: 'https://images.unsplash.com/photo-1617883861509-c1625f2c0b5f?w=800&h=600&fit=crop',
+        service_type: 'restring_grip',
+        string_selection: {
+          brand: 'Solinco',
+          model: 'Hyper-G',
+          gauge: '17g',
+          price_cents: 1600
+        },
+        tension_mains_lbs: 58,
+        tension_crosses_lbs: 56,
+        string_pattern: 'two_piece',
+        dropoff_method: {
+          method: 'Meet at location',
+          details: 'Stanford Tennis Courts'
+        },
+        estimated_price_cents: 4100,
+        accepted_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+        work_started_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        ready_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        completion_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
+        completion_notes: 'Strung at 58/56 lbs as requested. Racket is ready for pickup!'
+      },
+      // One more pending request for Marco Rodriguez
       {
         player_id: playerProfiles[1]?.id,
         stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
@@ -654,76 +780,6 @@ async function seedData() {
           details: 'My office - 555 Bryant St'
         },
         estimated_price_cents: 5500
-      },
-      {
-        player_id: playerProfiles[0]?.id,
-        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
-        status: 'pending',
-        racket_photo_url: 'https://images.unsplash.com/photo-1617883861744-87e9592e8e2d?w=800&h=600&fit=crop',
-        service_type: 'full_service',
-        string_selection: {
-          brand: 'Luxilon',
-          model: 'Element',
-          gauge: '16L',
-          price_cents: 2000
-        },
-        tension_mains_lbs: 54,
-        tension_crosses_lbs: 52,
-        string_pattern: 'ask_stringer',
-        dropoff_method: {
-          method: 'Meet at location',
-          details: 'Stanford University Tennis Courts'
-        },
-        special_instructions: 'Need both grip and grommets replaced',
-        preferred_time_slot: {
-          day: 'Saturday',
-          start: '10:00 AM',
-          end: '12:00 PM'
-        },
-        estimated_price_cents: 6200
-      },
-      {
-        player_id: playerProfiles[1]?.id,
-        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
-        status: 'pending',
-        racket_photo_url: 'https://images.unsplash.com/photo-1617883861653-c8c0de9aa87d?w=800&h=600&fit=crop',
-        service_type: 'restring_only',
-        string_selection: {
-          brand: 'Yonex',
-          model: 'Poly Tour Pro',
-          gauge: '16g',
-          price_cents: 1700
-        },
-        tension_mains_lbs: 52,
-        tension_crosses_lbs: 50,
-        string_pattern: 'two_piece',
-        dropoff_method: {
-          method: 'Meet at location',
-          details: 'Downtown Tennis Center'
-        },
-        estimated_price_cents: 4200
-      },
-      {
-        player_id: playerProfiles[0]?.id,
-        stringer_id: stringerProfiles[0]?.id, // Marco Rodriguez
-        status: 'pending',
-        racket_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
-        service_type: 'restring_grip',
-        string_selection: {
-          brand: 'Tecnifibre',
-          model: 'Multifeel',
-          gauge: '16g',
-          price_cents: 1600
-        },
-        tension_mains_lbs: 56,
-        tension_crosses_lbs: 54,
-        string_pattern: 'existing',
-        dropoff_method: {
-          method: 'Drop off at location',
-          details: 'University Tennis Courts'
-        },
-        special_instructions: 'Tournament this weekend, rush if possible',
-        estimated_price_cents: 4100
       }
     ]
 
@@ -846,6 +902,65 @@ async function seedData() {
         }
       }
       console.log('✅ Created sample messages')
+    }
+
+    // Create sample direct conversations (not tied to requests)
+    console.log('Creating sample conversations...')
+
+    // Get some profiles for conversations
+    const { data: conversationProfiles, error: convProfilesError } = await supabase
+      .from('profiles')
+      .select('id')
+
+    if (!convProfilesError && conversationProfiles && conversationProfiles.length >= 2) {
+      // Create a few conversations between stringers and players
+      const conversationsToCreate = [
+        {
+          participant_one: stringerIds[0], // Marco
+          participant_two: conversationProfiles.find(p => !stringerIds.includes(p.id))?.id, // A player
+          messages: [
+            { sender: 'player', body: 'Hi Marco! I saw your profile and was wondering about your natural gut strings?' },
+            { sender: 'stringer', body: 'Hey! Thanks for reaching out. I have natural gut available - it\'s $15 extra on top of the labor. Perfect for control and feel!' },
+            { sender: 'player', body: 'That sounds great! What\'s your availability this week?' }
+          ]
+        },
+        {
+          participant_one: stringerIds[1], // Sarah
+          participant_two: conversationProfiles.find(p => !stringerIds.includes(p.id))?.id, // A player
+          messages: [
+            { sender: 'player', body: 'Do you offer same-day service?' },
+            { sender: 'stringer', body: 'Yes! For an extra $10 I can have it done within 12 hours if you drop it off before noon.' },
+            { sender: 'player', body: 'Perfect! I\'ll come by tomorrow morning.' }
+          ]
+        }
+      ]
+
+      for (const conv of conversationsToCreate) {
+        if (!conv.participant_two) continue
+
+        // Use the helper function to create conversation
+        const { data: conversationId, error: convError } = await supabase
+          .rpc('get_or_create_conversation', {
+            user_one_id: conv.participant_one,
+            user_two_id: conv.participant_two
+          })
+
+        if (!convError && conversationId) {
+          // Add messages to the conversation
+          for (const msg of conv.messages) {
+            const senderId = msg.sender === 'stringer' ? conv.participant_one : conv.participant_two
+
+            await supabase
+              .from('messages')
+              .insert({
+                conversation_id: conversationId,
+                sender_id: senderId,
+                body: msg.body
+              })
+          }
+        }
+      }
+      console.log('✅ Created sample conversations')
     }
 
     console.log('🎉 Seed data created successfully!')
