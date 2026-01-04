@@ -13,11 +13,28 @@ export function formatPriceValue(cents: number): string {
   return `${(cents / 100).toFixed(2)}`
 }
 
+// Convert kilometers to miles and format for display
 export function formatDistance(km: number): string {
-  if (km < 1) {
-    return `${Math.round(km * 1000)}m`
+  const miles = km * 0.621371 // Convert km to miles
+  if (miles < 0.1) {
+    // Show in feet if less than 0.1 miles (528 feet)
+    const feet = Math.round(miles * 5280)
+    return `${feet} ft`
   }
-  return `${km.toFixed(1)}km`
+  return `${miles.toFixed(1)} mi`
+}
+
+// Convert 24-hour time to 12-hour AM/PM format
+export function formatTime12Hour(time24: string): string {
+  const [hours, minutes] = time24.split(':').map(Number)
+  const period = hours >= 12 ? 'PM' : 'AM'
+  const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
+}
+
+// Format time range in 12-hour format
+export function formatTimeRange(start: string, end: string): string {
+  return `${formatTime12Hour(start)} - ${formatTime12Hour(end)}`
 }
 
 export function formatDuration(hours: number): string {

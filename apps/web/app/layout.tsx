@@ -10,7 +10,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'Stringr',
+  title: 'Stringerly',
   description: 'Connect with local tennis stringers for quick, affordable racquet restringing. The Uber for tennis stringing.',
   keywords: 'tennis, stringing, racquet, restring, marketplace, local',
 }

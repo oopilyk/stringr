@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { Check, Circle, Loader2, Clock, User, ChevronRight, Package, Wrench } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { formatPrice } from '@stringr/ui'
+import { formatPrice } from '@stringerly/ui'
 
 interface StringingTask {
   id: string
@@ -70,7 +70,6 @@ export function PlayerActiveRequestCard({ request, stringer }: PlayerActiveReque
   const [tasks, setTasks] = useState<StringingTask[]>([])
   const [progress, setProgress] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [isCompleting, setIsCompleting] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -122,36 +121,18 @@ export function PlayerActiveRequestCard({ request, stringer }: PlayerActiveReque
     }
   }
 
-  const handleConfirmPickup = async () => {
-    if (!confirm('Have you picked up your racket? This will complete the request.')) return
-
-    try {
-      setIsCompleting(true)
-
-      const response = await fetch(`/api/requests/${request.id}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      if (response.ok) {
-        alert('Request completed! Don\'t forget to leave a review.')
-        window.location.reload()
-      } else {
-        const data = await response.json()
-        alert(data.error || 'Failed to complete request')
-      }
-    } catch (error) {
-      console.error('Error completing request:', error)
-      alert('Failed to complete request')
-    } finally {
-      setIsCompleting(false)
-    }
+  const handleConfirmPickup = () => {
+    // Redirect to review page instead of directly completing
+    router.push(`/review/${request.id}`)
   }
 
   const currentTask = tasks.find(t => t.status === 'in_progress') ||
                       tasks.find(t => t.status === 'pending' && REQUIRED_TASKS.includes(t.task_type))
 
   const completedTasks = tasks.filter(t => t.status === 'completed' && REQUIRED_TASKS.includes(t.task_type))
+
+  const completionPhotoTask = tasks.find(t => t.task_type === 'completion_photo')
+  const completionPhotoUrl = completionPhotoTask?.photo_url || request.completion_photo_url
 
   // Ready for pickup view
   if (request.status === 'ready_for_pickup') {
@@ -182,14 +163,17 @@ export function PlayerActiveRequestCard({ request, stringer }: PlayerActiveReque
             </div>
           </div>
 
-          {request.completion_photo_url && (
+          {completionPhotoUrl && (
             <div className="mb-6">
               <p className="text-sm font-medium text-gray-700 mb-2">Completed Racket</p>
-              <img
-                src={request.completion_photo_url}
-                alt="Completed racket"
-                className="w-full h-64 object-cover rounded-lg border-2 border-green-200"
-              />
+              <div className="overflow-x-auto">
+                <img
+                  src={completionPhotoUrl}
+                  alt="Completed racket"
+                  className="w-full max-h-96 object-contain rounded-lg border-2 border-green-200 bg-white cursor-pointer"
+                  onClick={() => window.open(completionPhotoUrl, '_blank')}
+                />
+              </div>
             </div>
           )}
 
@@ -204,14 +188,9 @@ export function PlayerActiveRequestCard({ request, stringer }: PlayerActiveReque
             <Button
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               onClick={handleConfirmPickup}
-              disabled={isCompleting}
             >
-              {isCompleting ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Check className="w-4 h-4 mr-2" />
-              )}
-              Confirm Pickup
+              <Check className="w-4 h-4 mr-2" />
+              Mark as Picked Up
             </Button>
             <Button
               variant="outline"

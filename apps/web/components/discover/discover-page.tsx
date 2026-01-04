@@ -3,15 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
-import { StringerCard } from '@stringr/ui'
-import { Button } from '@stringr/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
+import { StringerCard } from '@stringerly/ui'
+import { Button } from '@stringerly/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringerly/ui'
 import { UserPlus } from 'lucide-react'
-import type { StringerSearchResult, SearchStringersParams } from '@stringr/types'
+import type { StringerSearchResult, SearchStringersParams } from '@stringerly/types'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
 import { FilterBar } from './filter-bar'
 import { useSearchLocation } from '@/lib/contexts/search-location-context'
+import { calculateProfileCompleteness } from '@/lib/utils/profile-completeness'
 
 
 // Calculate distance using Haversine formula
@@ -114,7 +115,9 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
     queryFn: async () => {
       try {
         console.log('Fetching stringers from database...')
-        console.log('Current profile:', profile?.full_name, 'ID:', profile?.id)
+        console.log('Current profile:', profile?.full_name, 'ID:', profile?.id, 'Role:', profile?.role)
+        console.log('Current user location:', { lat: profile?.lat, lng: profile?.lng })
+        console.log('Search location:', { lat: searchParams.lat, lng: searchParams.lng })
 
         // Fetch stringers from database
         // Only fetch profiles that have completed stringer onboarding
@@ -151,7 +154,15 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
               max_daily_jobs: settings.max_daily_jobs,
               services: settings.services,
               string_inventory: settings.string_inventory,
-              availability: settings.availability
+              availability: settings.availability,
+              // Include fields needed for profile completeness calculation
+              machine_brand: settings.machine_brand,
+              machine_model: settings.machine_model,
+              machine_type: settings.machine_type,
+              supported_racket_types: settings.supported_racket_types,
+              max_tension: settings.max_tension,
+              dropoff_methods: settings.dropoff_methods,
+              flexible_availability: settings.flexible_availability
             },
             rating: {
               stringer_id: profile.id,
@@ -179,6 +190,17 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
             // Exclude the current user from results
             if (profile && stringer.id === profile.id) {
               console.log('Filtering out current user:', stringer.full_name)
+              return false
+            }
+
+            // CRITICAL: Only show stringers with at least 80% profile completion
+            const profileData = {
+              ...stringer,
+              ...stringer.stringer_settings
+            }
+            const completeness = calculateProfileCompleteness(profileData as any)
+            if (completeness < 80) {
+              console.log(`Filtering out ${stringer.full_name} - profile only ${completeness}% complete`)
               return false
             }
 
@@ -297,28 +319,30 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
               </CardContent>
             </Card>
             
-            {/* Stringer Recruitment Section */}
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="text-center py-8">
-                <UserPlus className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Are you a tennis stringer?
-                </h3>
-                <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                  Join our marketplace and connect with local tennis players who need your stringing services.
-                </p>
-                <Button
-                  onClick={() => window.location.href = '/become-stringer'}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Join as a Stringer
-                </Button>
-                <div className="mt-4 text-sm text-gray-500">
-                  <p>✓ Set your own prices  ✓ Choose your schedule  ✓ Grow your business</p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Stringer Recruitment Section - Only show to non-stringers */}
+            {profile?.role !== 'stringer' && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="text-center py-8">
+                  <UserPlus className="w-12 h-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Are you a tennis stringer?
+                  </h3>
+                  <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                    Join our marketplace and connect with local tennis players who need your stringing services.
+                  </p>
+                  <Button
+                    onClick={() => window.location.href = '/become-stringer'}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join as a Stringer
+                  </Button>
+                  <div className="mt-4 text-sm text-gray-500">
+                    <p>✓ Set your own prices  ✓ Choose your schedule  ✓ Grow your business</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

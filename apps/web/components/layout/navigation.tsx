@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useQuery } from '@tanstack/react-query'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { MessageSquare, Settings, Search, Menu, X } from 'lucide-react'
 import { SearchDropdown } from './search-dropdown'
 
@@ -90,12 +90,12 @@ export function Navigation() {
           <Link href={profile ? "/discover" : "/"} className="flex items-center space-x-3 flex-shrink-0">
             <img
               src="/logo.jpg"
-              alt="Stringr Logo"
+              alt="Stringerly Logo"
               width={48}
               height={48}
               className="rounded-full object-cover"
             />
-            <span className="text-2xl font-bold text-primary hidden sm:inline">STRINGR</span>
+            <span className="text-2xl font-bold text-primary hidden sm:inline">STRINGERLY</span>
           </Link>
 
           {/* Desktop Navigation - Left Side Links */}

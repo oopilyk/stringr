@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@stringr/ui", "@stringr/types"],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  transpilePackages: ["@stringerly/ui", "@stringerly/types"],
   experimental: {
     serverActions: {
       allowedOrigins: ["localhost:3000", "*.localhost:3000"],

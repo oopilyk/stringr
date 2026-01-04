@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { Camera, Loader2, X, Plus, Trash2, Edit2 } from 'lucide-react'
 import Image from 'next/image'
 import {
@@ -12,10 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@stringr/ui'
-import { Input } from '@stringr/ui'
-import { Textarea } from '@stringr/ui'
-import { Label } from '@stringr/ui'
+} from '@stringerly/ui'
+import { Input } from '@stringerly/ui'
+import { Textarea } from '@stringerly/ui'
+import { Label } from '@stringerly/ui'
 
 interface GalleryImage {
   id: string
@@ -44,6 +44,7 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [viewingImage, setViewingImage] = useState<GalleryImage | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
@@ -381,38 +382,38 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images.map((image) => (
             <div key={image.id} className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100">
-              <Image
-                src={image.image_url}
-                alt={image.caption || 'Racket photo'}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
-              />
+              <button
+                onClick={() => setViewingImage(image)}
+                className="w-full h-full relative"
+              >
+                <Image
+                  src={image.image_url}
+                  alt={image.caption || 'Racket photo'}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                />
 
-              {/* Overlay with details */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                  {image.caption && (
-                    <p className="text-sm font-medium line-clamp-2 mb-1">{image.caption}</p>
-                  )}
-                  {(image.racquet_brand || image.racquet_model) && (
-                    <p className="text-xs opacity-90">
-                      {[image.racquet_brand, image.racquet_model].filter(Boolean).join(' ')}
-                    </p>
-                  )}
-                  {image.string_used && (
-                    <p className="text-xs opacity-90">{image.string_used}</p>
-                  )}
-                  {image.tension_lbs && (
-                    <p className="text-xs opacity-90">{image.tension_lbs} lbs</p>
-                  )}
+                {/* Always visible caption overlay at bottom */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                    {image.caption && (
+                      <p className="text-sm font-medium line-clamp-2 mb-1">{image.caption}</p>
+                    )}
+                    {image.tension_lbs && (
+                      <p className="text-xs opacity-90 font-semibold">{image.tension_lbs} lbs</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </button>
 
               {/* Delete button for own profile */}
               {isOwnProfile && (
                 <button
-                  onClick={() => handleDelete(image.id, image.image_url)}
-                  className="absolute top-2 right-2 p-1.5 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDelete(image.id, image.image_url)
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
                 >
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>
@@ -420,6 +421,96 @@ export function RacketGallery({ stringerId, isOwnProfile }: RacketGalleryProps) 
             </div>
           ))}
         </div>
+      )}
+
+      {/* Image Detail Modal */}
+      {viewingImage && (
+        <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Racket Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-gray-100">
+                <Image
+                  src={viewingImage.image_url}
+                  alt={viewingImage.caption || 'Racket photo'}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+
+              <div className="space-y-3">
+                {viewingImage.caption && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Details</h4>
+                    <p className="text-base text-gray-900">{viewingImage.caption}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  {(viewingImage.racquet_brand || viewingImage.racquet_model) && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-1">Racket</h4>
+                      <p className="text-base text-gray-900">
+                        {[viewingImage.racquet_brand, viewingImage.racquet_model].filter(Boolean).join(' ')}
+                      </p>
+                    </div>
+                  )}
+
+                  {viewingImage.string_used && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-1">String</h4>
+                      <p className="text-base text-gray-900">{viewingImage.string_used}</p>
+                    </div>
+                  )}
+
+                  {viewingImage.tension_lbs && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-1">Tension</h4>
+                      <p className="text-base text-gray-900">{viewingImage.tension_lbs} lbs</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Date</h4>
+                    <p className="text-base text-gray-900">
+                      {new Date(viewingImage.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setViewingImage(null)}
+                >
+                  Back to Profile
+                </Button>
+                <div className="flex gap-2">
+                  {isOwnProfile && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleDelete(viewingImage.id, viewingImage.image_url)
+                        setViewingImage(null)
+                      }}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

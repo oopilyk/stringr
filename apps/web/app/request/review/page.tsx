@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Navigation } from '@/components/layout/navigation'
-import { Button } from '@stringr/ui'
+import { Button, formatTimeRange } from '@stringerly/ui'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -181,21 +181,20 @@ function ReviewRequestContent() {
               <p className="text-base text-gray-900">{stringPatternLabels[requestData.string_pattern]}</p>
             </div>
 
-            {/* Dropoff Method */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Dropoff Method</h3>
-              <p className="text-base text-gray-900">{requestData.dropoff_method.method}</p>
-              {requestData.dropoff_method.details && (
-                <p className="text-sm text-gray-600 mt-1">{requestData.dropoff_method.details}</p>
-              )}
-            </div>
+            {/* Dropoff Instructions */}
+            {requestData.dropoff_method?.details && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">Drop-off Instructions</h3>
+                <p className="text-sm text-gray-600">{requestData.dropoff_method.details}</p>
+              </div>
+            )}
 
             {/* Preferred Time Slot */}
             {requestData.preferred_time_slot && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Preferred Dropoff Time</h3>
                 <p className="text-base text-gray-900">
-                  {requestData.preferred_time_slot.day} {requestData.preferred_time_slot.start} - {requestData.preferred_time_slot.end}
+                  {requestData.preferred_time_slot.day} {formatTimeRange(requestData.preferred_time_slot.start, requestData.preferred_time_slot.end)}
                 </p>
               </div>
             )}

@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { StringerOnboardingData } from '@stringr/types'
+import { StringerOnboardingData } from '@stringerly/types'
 import { useOnboardingAutosave } from '@/lib/hooks/use-onboarding-autosave'
 import { getOnboardingProgress, clearOnboardingProgress } from '@/lib/utils/onboarding-storage'
+import { formatFullNameFinal, formatCityNameFinal } from '@/lib/utils/input-formatters'
 import { ProgressIndicator } from '@/components/stringer-onboarding/progress-indicator'
 import { Step1Credentials } from '@/components/stringer-onboarding/step1-credentials'
 import { Step2Background } from '@/components/stringer-onboarding/step2-background'
@@ -15,7 +16,7 @@ import { Step4Pricing } from '@/components/stringer-onboarding/step4-pricing'
 import { Step5Inventory } from '@/components/stringer-onboarding/step5-inventory'
 import { Step6Availability } from '@/components/stringer-onboarding/step6-availability'
 import { Step7Review } from '@/components/stringer-onboarding/step7-review'
-import { Button, Card, CardContent } from '@stringr/ui'
+import { Button, Card, CardContent } from '@stringerly/ui'
 
 const STEP_TITLES = [
   '',
@@ -50,7 +51,6 @@ export default function StringerSignupPage() {
       turnaround_hours: 24,
       accepts_rush: true,
       rush_fee_cents: 500,
-      max_daily_jobs: 5,
       accepts_player_strings: true,
       string_inventory: [],
       dropoff_methods: [],
@@ -58,31 +58,92 @@ export default function StringerSignupPage() {
     },
   })
 
-  // Load saved progress on mount and URL params
+  // Load existing user data if logged in, or saved progress
   useEffect(() => {
-    // Check URL params first (from /auth/signup)
-    const params = new URLSearchParams(window.location.search)
-    const emailParam = params.get('email')
-    const passwordParam = params.get('password')
-    const fullNameParam = params.get('full_name')
+    const loadExistingData = async () => {
+      // First check if user is already logged in
+      const { data: { user } } = await supabase.auth.getUser()
 
-    if (emailParam) setValue('email', emailParam)
-    if (passwordParam) setValue('password', passwordParam)
-    if (fullNameParam) setValue('full_name', fullNameParam)
+      if (user) {
+        // User is logged in - load their existing data
+        setUserId(user.id)
 
-    // Then load saved progress
-    const saved = getOnboardingProgress()
-    if (saved) {
-      Object.keys(saved).forEach((key) => {
-        if (key !== '_meta') {
-          setValue(key as any, saved[key])
+        // Load profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          setValue('email', user.email || '')
+          setValue('full_name', profile.full_name || '')
+          setValue('phone', profile.phone || '')
+          setValue('city', profile.city || '')
+          setValue('lat', profile.lat)
+          setValue('lng', profile.lng)
+          setValue('bio', profile.bio || '')
+          setValue('years_experience', profile.years_experience)
+          setValue('rackets_strung_count', profile.rackets_strung_count)
+          setValue('certifications', profile.certifications || [])
+          setValue('player_levels_served', profile.player_levels_served || [])
         }
-      })
-      if (saved._meta?.lastStep && saved._meta.lastStep > 1) {
-        // If they've already created an account, start at their last step
-        setCurrentStep(saved._meta.lastStep)
+
+        // Load stringer settings
+        const { data: settings } = await supabase
+          .from('stringer_settings')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (settings) {
+          setValue('machine_brand', settings.machine_brand || '')
+          setValue('machine_model', settings.machine_model || '')
+          setValue('machine_type', settings.machine_type)
+          setValue('max_tension', settings.max_tension)
+          setValue('supported_racket_types', settings.supported_racket_types || [])
+          setValue('base_price_cents', settings.base_price_cents || 2500)
+          setValue('turnaround_hours', settings.turnaround_hours || 24)
+          setValue('accepts_rush', settings.accepts_rush ?? true)
+          setValue('rush_fee_cents', settings.rush_fee_cents || 500)
+          setValue('discount_bulk_jobs', settings.discount_bulk_jobs || 0)
+          setValue('pricing_notes', settings.pricing_notes || '')
+          setValue('string_inventory', settings.string_inventory || [])
+          setValue('accepts_player_strings', settings.accepts_player_strings ?? true)
+          setValue('dropoff_methods', settings.dropoff_methods || [])
+          setValue('availability', settings.availability || [])
+          setValue('flexible_availability', settings.flexible_availability ?? false)
+
+          // Start at step 2 since they already have an account
+          setCurrentStep(2)
+        }
+      } else {
+        // User not logged in - check URL params and saved progress
+        const params = new URLSearchParams(window.location.search)
+        const emailParam = params.get('email')
+        const passwordParam = params.get('password')
+        const fullNameParam = params.get('full_name')
+
+        if (emailParam) setValue('email', emailParam)
+        if (passwordParam) setValue('password', passwordParam)
+        if (fullNameParam) setValue('full_name', fullNameParam)
+
+        // Then load saved progress
+        const saved = getOnboardingProgress()
+        if (saved) {
+          Object.keys(saved).forEach((key) => {
+            if (key !== '_meta') {
+              setValue(key as any, saved[key])
+            }
+          })
+          if (saved._meta?.lastStep && saved._meta.lastStep > 1) {
+            setCurrentStep(saved._meta.lastStep)
+          }
+        }
       }
     }
+
+    loadExistingData()
   }, [setValue])
 
   // Autosave hook
@@ -102,6 +163,14 @@ export default function StringerSignupPage() {
         return
       }
       await createUserAccount()
+    } else if (currentStep === 6) {
+      // Step 6 requires at least one dropoff method
+      const dropoffMethods = getValues('dropoff_methods')
+      if (!dropoffMethods || dropoffMethods.length === 0) {
+        setMessage('Please select at least one dropoff method before continuing')
+        return
+      }
+      setCurrentStep((prev) => Math.min(prev + 1, 7))
     } else {
       // For other steps, just move forward (all fields are optional)
       setCurrentStep((prev) => Math.min(prev + 1, 7))
@@ -139,12 +208,12 @@ export default function StringerSignupPage() {
       if (authData.user) {
         setUserId(authData.user.id)
 
-        // Create initial profile
+        // Create initial profile with formatted data
         await supabase.from('profiles').insert({
           id: authData.user.id,
-          full_name: data.full_name,
+          full_name: formatFullNameFinal(data.full_name),
           phone: data.phone,
-          city: data.city,
+          city: formatCityNameFinal(data.city),
           lat: data.lat,
           lng: data.lng,
           role: 'stringer',
@@ -158,7 +227,6 @@ export default function StringerSignupPage() {
           turnaround_hours: data.turnaround_hours,
           accepts_rush: data.accepts_rush,
           rush_fee_cents: data.rush_fee_cents,
-          max_daily_jobs: data.max_daily_jobs,
         })
 
         setCurrentStep(2)
@@ -209,7 +277,7 @@ export default function StringerSignupPage() {
       <div className="max-w-4xl w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-primary">Join Stringr as a Stringer</h1>
+          <h1 className="text-3xl font-bold text-primary">Join Stringerly as a Stringer</h1>
           <p className="mt-2 text-sm text-gray-600">Complete your professional profile to start earning</p>
         </div>
 
@@ -231,7 +299,7 @@ export default function StringerSignupPage() {
             <form onSubmit={handleSubmit(currentStep === 7 ? handleFinalSubmit : handleNext)}>
               {currentStep === 1 && <Step1Credentials register={register} errors={errors} setValue={setValue} watch={watch} />}
               {currentStep === 2 && <Step2Background register={register} errors={errors} setValue={setValue} watch={watch} />}
-              {currentStep === 3 && <Step3Equipment register={register} errors={errors} setValue={setValue} watch={watch} />}
+              {currentStep === 3 && <Step3Equipment errors={errors} setValue={setValue} watch={watch} />}
               {currentStep === 4 && <Step4Pricing register={register} errors={errors} setValue={setValue} watch={watch} />}
               {currentStep === 5 && <Step5Inventory register={register} errors={errors} setValue={setValue} watch={watch} getValues={getValues} />}
               {currentStep === 6 && <Step6Availability register={register} errors={errors} setValue={setValue} watch={watch} getValues={getValues} />}

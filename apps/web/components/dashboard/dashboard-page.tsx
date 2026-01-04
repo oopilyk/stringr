@@ -4,8 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
-import { StatusBadge, formatPrice } from '@stringr/ui'
-import { Button } from '@stringr/ui'
+import { StatusBadge, formatPrice, formatTimeRange } from '@stringerly/ui'
+import { Button } from '@stringerly/ui'
 import { DollarSign, Star, MessageSquare, CheckCircle, Activity, X } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -114,7 +114,7 @@ export function DashboardPage() {
       if (!requests || requests.length === 0) return []
 
       // Then, get the stringer profiles for these requests
-      const stringerIds = [...new Set(requests.map(r => r.stringer_id))]
+      const stringerIds = Array.from(new Set(requests.map(r => r.stringer_id)))
       const { data: stringers, error: stringersError } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -156,7 +156,7 @@ export function DashboardPage() {
       if (!requests || requests.length === 0) return []
 
       // Then, get the player profiles for these requests
-      const playerIds = [...new Set(requests.map(r => r.player_id))]
+      const playerIds = Array.from(new Set(requests.map(r => r.player_id)))
       const { data: players, error: playersError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
@@ -399,7 +399,7 @@ export function DashboardPage() {
                         <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                           <p className="text-sm text-gray-600">
                             <span className="font-medium">Preferred dropoff:</span>{' '}
-                            {request.preferred_time_slot.day} {request.preferred_time_slot.start} - {request.preferred_time_slot.end}
+                            {request.preferred_time_slot.day} {formatTimeRange(request.preferred_time_slot.start, request.preferred_time_slot.end)}
                           </p>
                         </div>
                       )}

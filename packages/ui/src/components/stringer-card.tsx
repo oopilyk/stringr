@@ -1,7 +1,7 @@
 import { Star, Clock, DollarSign, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader } from "./ui/card"
 import { cn, formatPrice, formatPriceValue, formatDuration, formatDistance } from "../lib/utils"
-import type { StringerSearchResult } from "@stringr/types"
+import type { StringerSearchResult } from "@stringerly/types"
 
 interface StringerCardProps {
   stringer: StringerSearchResult

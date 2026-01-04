@@ -1,9 +1,11 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData } from '@stringr/types'
-import { MapPin, Eye, EyeOff } from 'lucide-react'
+import { StringerOnboardingData } from '@stringerly/types'
+import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
+import { formatPhoneNumber, formatEmail, formatFullName } from '@/lib/utils/input-formatters'
+import { LocationAutocomplete } from '@/components/common/location-autocomplete'
 
 interface Step1CredentialsProps {
   register: UseFormRegister<StringerOnboardingData>
@@ -14,9 +16,12 @@ interface Step1CredentialsProps {
 
 export function Step1Credentials({ register, errors, setValue, watch }: Step1CredentialsProps) {
   const [showPassword, setShowPassword] = useState(false)
-  const [loadingLocation, setLoadingLocation] = useState(false)
 
   const password = watch('password')
+  const phone = watch('phone')
+  const email = watch('email')
+  const city = watch('city')
+  const fullName = watch('full_name')
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { score: 0, label: '', color: '' }
@@ -29,60 +34,11 @@ export function Step1Credentials({ register, errors, setValue, watch }: Step1Cre
 
   const passwordStrength = getPasswordStrength(password || '')
 
-  // Forward geocode: city name -> lat/lng
-  const geocodeCity = async (cityName: string) => {
-    if (!cityName || cityName.length < 2) return
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`
-      )
-      const data = await response.json()
-      if (data && data.length > 0) {
-        const { lat, lon } = data[0]
-        setValue('lat', parseFloat(lat))
-        setValue('lng', parseFloat(lon))
-        console.log(`Geocoded ${cityName} to ${lat}, ${lon}`)
-      }
-    } catch (error) {
-      console.error('Failed to geocode city:', error)
-    }
-  }
-
-  const useCurrentLocation = () => {
-    setLoadingLocation(true)
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords
-          setValue('lat', latitude)
-          setValue('lng', longitude)
-
-          // Reverse geocode to get city name
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-            )
-            const data = await response.json()
-            const city =
-              data.address?.city || data.address?.town || data.address?.village || data.address?.county || ''
-            if (city) {
-              setValue('city', city)
-            }
-          } catch (error) {
-            console.error('Failed to reverse geocode:', error)
-          }
-          setLoadingLocation(false)
-        },
-        (error) => {
-          console.error('Geolocation error:', error)
-          setLoadingLocation(false)
-          alert('Unable to get your location. Please enter your city manually.')
-        }
-      )
-    } else {
-      setLoadingLocation(false)
-      alert('Geolocation is not supported by your browser.')
+  const handleLocationChange = (cityName: string, lat?: number, lng?: number) => {
+    setValue('city', cityName)
+    if (lat !== undefined && lng !== undefined) {
+      setValue('lat', lat)
+      setValue('lng', lng)
     }
   }
 
@@ -96,14 +52,14 @@ export function Step1Credentials({ register, errors, setValue, watch }: Step1Cre
         <input
           id="email"
           type="email"
-          {...register('email', {
-            required: 'Email is required',
-            pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' },
-          })}
+          value={email || ''}
+          onChange={(e) => setValue('email', formatEmail(e.target.value))}
           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           placeholder="your.email@example.com"
+          maxLength={100}
         />
         {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+        <p className="mt-1 text-xs text-gray-500">Will be automatically converted to lowercase</p>
       </div>
 
       {/* Password */}
@@ -154,14 +110,14 @@ export function Step1Credentials({ register, errors, setValue, watch }: Step1Cre
         <input
           id="full_name"
           type="text"
-          {...register('full_name', {
-            required: 'Full name is required',
-            minLength: { value: 2, message: 'Name must be at least 2 characters' },
-          })}
+          value={fullName || ''}
+          onChange={(e) => setValue('full_name', formatFullName(e.target.value))}
           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           placeholder="John Doe"
+          maxLength={100}
         />
         {errors.full_name && <p className="mt-1 text-sm text-red-600">{errors.full_name.message}</p>}
+        <p className="mt-1 text-xs text-gray-500">First letter of each word will be capitalized</p>
       </div>
 
       {/* Phone */}
@@ -172,44 +128,31 @@ export function Step1Credentials({ register, errors, setValue, watch }: Step1Cre
         <input
           id="phone"
           type="tel"
-          {...register('phone', {
-            required: 'Phone number is required',
-            pattern: { value: /^[\d\s\-\(\)\+]+$/, message: 'Invalid phone number' },
-          })}
+          value={phone || ''}
+          onChange={(e) => setValue('phone', formatPhoneNumber(e.target.value))}
           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-          placeholder="+1 (555) 123-4567"
+          placeholder="(555) 123-4567"
+          maxLength={14}
         />
         {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
+        <p className="mt-1 text-xs text-gray-500">Format: (XXX) XXX-XXXX</p>
       </div>
 
-      {/* City with geolocation */}
+      {/* City with autocomplete */}
       <div>
         <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
           City / Location *
         </label>
-        <div className="flex gap-2">
-          <input
-            id="city"
-            type="text"
-            {...register('city', {
-              required: 'City is required',
-              minLength: { value: 2, message: 'City must be at least 2 characters' },
-            })}
-            onBlur={(e) => geocodeCity(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-            placeholder="San Francisco"
-          />
-          <button
-            type="button"
-            onClick={useCurrentLocation}
-            disabled={loadingLocation}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md text-sm font-medium text-gray-700 disabled:opacity-50"
-          >
-            <MapPin className="w-5 h-5" />
-          </button>
-        </div>
-        {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
-        <p className="mt-1 text-xs text-gray-500">Players will use this to find stringers near them</p>
+        <LocationAutocomplete
+          value={city || ''}
+          onChange={handleLocationChange}
+          placeholder="Baltimore, MD"
+          error={errors.city?.message}
+          required
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Start typing to search for your location. Players will use this to find stringers near them.
+        </p>
       </div>
     </div>
   )

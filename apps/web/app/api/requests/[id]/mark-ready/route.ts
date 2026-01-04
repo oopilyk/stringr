@@ -34,17 +34,43 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Verify request is in_progress
-    if (req.status !== 'in_progress') {
-      return NextResponse.json({ error: 'Request must be in progress' }, { status: 400 })
+    // Verify request is accepted or in_progress
+    if (req.status !== 'in_progress' && req.status !== 'accepted') {
+      return NextResponse.json({ error: 'Request must be accepted or in progress' }, { status: 400 })
     }
 
     // Verify all required tasks are completed
-    const { data: allCompleted } = await supabase
-      .rpc('all_required_tasks_completed', { p_request_id: params.id })
+    const REQUIRED_TASKS = [
+      'receive_racket',
+      'remove_strings',
+      'mount_racket',
+      'string_mains',
+      'string_crosses',
+      'tie_off',
+      'final_inspection'
+    ]
 
-    if (!allCompleted) {
-      return NextResponse.json({ error: 'All required tasks must be completed' }, { status: 400 })
+    const { data: tasks, error: tasksError } = await supabase
+      .from('stringing_tasks')
+      .select('task_type, status')
+      .eq('request_id', params.id)
+
+    if (tasksError) {
+      console.error('Tasks fetch error:', tasksError)
+      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
+    }
+
+    // Check if all required tasks are completed
+    const completedTasks = tasks?.filter(t => t.status === 'completed').map(t => t.task_type) || []
+    const missingTasks = REQUIRED_TASKS.filter(rt => !completedTasks.includes(rt))
+
+    if (missingTasks.length > 0) {
+      console.error('Missing tasks:', missingTasks)
+      return NextResponse.json({
+        error: 'All required tasks must be completed',
+        missingTasks: missingTasks,
+        completedTasks: completedTasks
+      }, { status: 400 })
     }
 
     // Update request to ready_for_pickup
@@ -70,7 +96,7 @@ export async function POST(
       .from('request_state_changes')
       .insert({
         request_id: params.id,
-        from_status: 'in_progress',
+        from_status: req.status,
         to_status: 'ready_for_pickup',
         changed_by: user.id,
         metadata: { completion_notes }

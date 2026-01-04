@@ -1,9 +1,9 @@
 'use client'
 
-import { Profile } from '@stringr/types'
+import { Profile } from '@stringerly/types'
 import { AvatarUpload } from './avatar-upload'
 import { Star, MapPin, Edit, LogOut } from 'lucide-react'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -14,6 +14,7 @@ interface ProfileHeaderProps {
   reviewCount?: number
   isOwnProfile?: boolean
   onAvatarChange: (url: string) => void
+  userEmail?: string
 }
 
 export function ProfileHeader({
@@ -21,7 +22,8 @@ export function ProfileHeader({
   averageRating = 0,
   reviewCount = 0,
   isOwnProfile = false,
-  onAvatarChange
+  onAvatarChange,
+  userEmail
 }: ProfileHeaderProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -52,7 +54,7 @@ export function ProfileHeader({
               />
             ) : (
               <span className="text-white text-4xl font-bold">
-                {(profile.full_name || profile.email)?.substring(0, 2).toUpperCase()}
+                {(profile.full_name || userEmail || 'U')?.substring(0, 2).toUpperCase()}
               </span>
             )}
           </div>
@@ -65,7 +67,7 @@ export function ProfileHeader({
               {profile.full_name || 'Anonymous User'}
             </h1>
             {isOwnProfile && (
-              <Link href="/my-profile/edit">
+              <Link href="/auth/stringer-signup">
                 <Button variant="outline" size="sm">
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Profile

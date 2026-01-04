@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { MapPin, DollarSign, Star, Clock, Zap, X, ChevronDown } from 'lucide-react'
-import type { SearchStringersParams } from '@stringr/types'
+import type { SearchStringersParams } from '@stringerly/types'
 
 interface FilterBarProps {
   searchParams: SearchStringersParams

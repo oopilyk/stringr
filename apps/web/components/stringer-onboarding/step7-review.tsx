@@ -1,11 +1,11 @@
 'use client'
 
 import { UseFormGetValues } from 'react-hook-form'
-import { StringerOnboardingData } from '@stringr/types'
-import { Card, Button } from '@stringr/ui'
+import { StringerOnboardingData } from '@stringerly/types'
+import { Card, Button } from '@stringerly/ui'
 import { Edit, Check } from 'lucide-react'
 import { calculateProfileCompleteness, getCompletenessMessage, getCompletionColor } from '@/lib/utils/profile-completeness'
-import { formatPrice } from '@stringr/ui'
+import { formatPrice } from '@stringerly/ui'
 
 interface Step7ReviewProps {
   getValues: UseFormGetValues<StringerOnboardingData>
@@ -93,10 +93,6 @@ export function Step7Review({ getValues, jumpToStep }: Step7ReviewProps) {
             <dd className="font-medium text-gray-900">
               {data.certifications && data.certifications.length > 0 ? data.certifications.join(', ') : '—'}
             </dd>
-          </div>
-          <div>
-            <dt className="text-gray-500">Stringing Location</dt>
-            <dd className="font-medium text-gray-900">{data.stringing_location || '—'}</dd>
           </div>
           <div>
             <dt className="text-gray-500">Player Levels</dt>
@@ -253,10 +249,6 @@ export function Step7Review({ getValues, jumpToStep }: Step7ReviewProps) {
             <dd className="font-medium text-gray-900">
               {data.availability && data.availability.length > 0 ? `${data.availability.length} time slots configured` : 'Not set'}
             </dd>
-          </div>
-          <div>
-            <dt className="text-gray-500">Max Daily Jobs</dt>
-            <dd className="font-medium text-gray-900">{data.max_daily_jobs || '—'}</dd>
           </div>
         </dl>
       </Card>

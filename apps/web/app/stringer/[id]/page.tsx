@@ -6,11 +6,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { CreateRequestDialog } from '@/components/requests/create-request-dialog'
 import { Star, MapPin, Clock, DollarSign, Check, MessageSquare, Grid, Award } from 'lucide-react'
-import { formatPrice, formatDuration } from '@stringr/ui'
-import type { StringerSearchResult } from '@stringr/types'
+import { formatPrice, formatDuration, formatTimeRange } from '@stringerly/ui'
+import type { StringerSearchResult } from '@stringerly/types'
 
 export default function StringerProfileViewPage() {
   const params = useParams()
@@ -197,9 +197,9 @@ export default function StringerProfileViewPage() {
           accepts_player_strings: true,
           flexible_availability: false,
           dropoff_methods: [
-            { method: 'meetup', enabled: true, details: 'Can meet at local tennis courts or coffee shops in Baltimore area' },
-            { method: 'pickup', enabled: true, details: 'Free pickup within 10 miles, $5 fee for 10-20 miles' },
-            { method: 'dropbox', enabled: true, details: 'Available at Baltimore Tennis Club, 123 Court St, 9am-8pm daily' }
+            { method: 'dropoff' as const, enabled: true, details: 'Can meet at local tennis courts or coffee shops in Baltimore area' },
+            { method: 'dropoff' as const, enabled: true, details: 'Free pickup within 10 miles, $5 fee for 10-20 miles' },
+            { method: 'dropoff' as const, enabled: true, details: 'Available at Baltimore Tennis Club, 123 Court St, 9am-8pm daily' }
           ],
           services: [
             { name: 'Standard Restring', price_cents: 2500 },
@@ -207,9 +207,9 @@ export default function StringerProfileViewPage() {
             { name: 'Hybrid Setup', price_cents: 4000 }
           ],
           string_inventory: [
-            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', price_cents: 1800 },
-            { brand: 'Babolat', model: 'RPM Blast', gauge: '17', price_cents: 1600 },
-            { brand: 'Wilson', model: 'NXT', gauge: '16', price_cents: 1200 }
+            { brand: 'Luxilon', model: 'ALU Power', gauge: '16L', price_cents: 1800, quantity: 10 },
+            { brand: 'Babolat', model: 'RPM Blast', gauge: '17', price_cents: 1600, quantity: 8 },
+            { brand: 'Wilson', model: 'NXT', gauge: '16', price_cents: 1200, quantity: 12 }
           ],
           availability: [
             { dow: 1, start: '17:00', end: '21:00' },
@@ -255,9 +255,9 @@ export default function StringerProfileViewPage() {
           accepts_player_strings: true,
           flexible_availability: false,
           dropoff_methods: [
-            { method: 'meetup', enabled: true, details: 'Happy to meet at local parks or tennis facilities' },
-            { method: 'ship', enabled: true, details: 'USPS Priority Mail return shipping included in price' },
-            { method: 'dropbox', enabled: true, details: '456 Elm Ave, secure lockbox available 24/7' }
+            { method: 'dropoff' as const, enabled: true, details: 'Happy to meet at local parks or tennis facilities' },
+            { method: 'dropoff' as const, enabled: true, details: 'USPS Priority Mail return shipping included in price' },
+            { method: 'dropoff' as const, enabled: true, details: '456 Elm Ave, secure lockbox available 24/7' }
           ],
           services: [
             { name: 'Express Restring', price_cents: 3000 },
@@ -265,8 +265,8 @@ export default function StringerProfileViewPage() {
             { name: 'String Consultation', price_cents: 5000 }
           ],
           string_inventory: [
-            { brand: 'Solinco', model: 'Tour Bite', gauge: '17', price_cents: 1400 },
-            { brand: 'Technifibre', model: 'Black Code', gauge: '16', price_cents: 1500 }
+            { brand: 'Solinco', model: 'Tour Bite', gauge: '17', price_cents: 1400, quantity: 6 },
+            { brand: 'Technifibre', model: 'Black Code', gauge: '16', price_cents: 1500, quantity: 5 }
           ],
           availability: [
             { dow: 1, start: '18:00', end: '20:00' },
@@ -311,8 +311,8 @@ export default function StringerProfileViewPage() {
           accepts_player_strings: true,
           flexible_availability: true,
           dropoff_methods: [
-            { method: 'meetup', enabled: true, details: 'Flexible meeting locations throughout Baltimore' },
-            { method: 'pickup', enabled: true, details: 'Free pickup anywhere in Baltimore city limits' }
+            { method: 'dropoff' as const, enabled: true, details: 'Flexible meeting locations throughout Baltimore' },
+            { method: 'dropoff' as const, enabled: true, details: 'Free pickup anywhere in Baltimore city limits' }
           ],
           services: [
             { name: 'Basic Restring', price_cents: 2000 },
@@ -320,8 +320,8 @@ export default function StringerProfileViewPage() {
             { name: 'Multifilament', price_cents: 2800 }
           ],
           string_inventory: [
-            { brand: 'Prince', model: 'Synthetic Gut', gauge: '16', price_cents: 800 },
-            { brand: 'Gamma', model: 'TNT2', gauge: '17', price_cents: 900 }
+            { brand: 'Prince', model: 'Synthetic Gut', gauge: '16', price_cents: 800, quantity: 15 },
+            { brand: 'Gamma', model: 'TNT2', gauge: '17', price_cents: 900, quantity: 10 }
           ],
           availability: []
         },
@@ -727,7 +727,7 @@ export default function StringerProfileViewPage() {
                       return (
                         <div key={i} className="p-3 bg-gray-50 rounded-lg text-sm">
                           <span className="font-medium text-gray-900">{days[block.dow]}:</span>{' '}
-                          <span className="text-gray-700">{block.start} - {block.end}</span>
+                          <span className="text-gray-700">{formatTimeRange(block.start, block.end)}</span>
                         </div>
                       );
                     })}

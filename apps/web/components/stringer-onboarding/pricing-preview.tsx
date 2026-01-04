@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPrice } from '@stringr/ui'
+import { formatPrice } from '@stringerly/ui'
 
 interface PricingPreviewProps {
   basePrice: number // in cents

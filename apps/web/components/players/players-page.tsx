@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
-import { Card, CardContent } from '@stringr/ui'
+import { Button, formatDistance } from '@stringerly/ui'
+import { Card, CardContent } from '@stringerly/ui'
 import { User } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
@@ -25,11 +25,6 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 
 function toRadians(degrees: number): number {
   return degrees * (Math.PI / 180)
-}
-
-function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)}m`
-  return `${km.toFixed(1)}km`
 }
 
 interface Player {

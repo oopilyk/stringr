@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Stringr",
-    "slug": "stringr",
+    "name": "Stringerly",
+    "slug": "stringerly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,19 +17,19 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.stringr.app"
+      "bundleIdentifier": "com.stringerly.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.stringr.app"
+      "package": "com.stringerly.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "stringr",
+    "scheme": "stringerly",
     "platforms": ["ios", "android", "web"],
     "plugins": [
       "expo-router",
@@ -43,7 +43,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Stringr to use your location to find nearby stringers."
+          "locationAlwaysAndWhenInUsePermission": "Allow Stringerly to use your location to find nearby stringers."
         }
       ]
     ]

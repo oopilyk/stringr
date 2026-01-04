@@ -73,12 +73,12 @@ async function seedData() {
             { name: 'Hybrid Setup', price_cents: 4000 }
           ],
           availability: [
-            { dow: 1, start: '17:00', end: '21:00' }, // Monday
-            { dow: 2, start: '17:00', end: '21:00' }, // Tuesday
-            { dow: 3, start: '17:00', end: '21:00' }, // Wednesday
-            { dow: 4, start: '17:00', end: '21:00' }, // Thursday
-            { dow: 6, start: '09:00', end: '17:00' }, // Saturday
-            { dow: 0, start: '09:00', end: '17:00' }, // Sunday
+            { dow: 1, start: '17:00', end: '21:00' }, // Monday 5:00 PM - 9:00 PM
+            { dow: 2, start: '17:00', end: '21:00' }, // Tuesday 5:00 PM - 9:00 PM
+            { dow: 3, start: '17:00', end: '21:00' }, // Wednesday 5:00 PM - 9:00 PM
+            { dow: 4, start: '17:00', end: '21:00' }, // Thursday 5:00 PM - 9:00 PM
+            { dow: 6, start: '09:00', end: '17:00' }, // Saturday 9:00 AM - 5:00 PM
+            { dow: 0, start: '09:00', end: '17:00' }, // Sunday 9:00 AM - 5:00 PM
           ]
         }
       },
@@ -291,10 +291,10 @@ async function seedData() {
             { name: 'Custom Tension', price_cents: 4000 }
           ],
           availability: [
-            { dow: 2, start: '16:00', end: '21:00' },
-            { dow: 4, start: '16:00', end: '21:00' },
-            { dow: 6, start: '08:00', end: '18:00' },
-            { dow: 0, start: '10:00', end: '16:00' },
+            { dow: 2, start: '16:00', end: '21:00' }, // Tuesday 4:00 PM - 9:00 PM
+            { dow: 4, start: '16:00', end: '21:00' }, // Thursday 4:00 PM - 9:00 PM
+            { dow: 6, start: '08:00', end: '18:00' }, // Saturday 8:00 AM - 6:00 PM
+            { dow: 0, start: '10:00', end: '16:00' }, // Sunday 10:00 AM - 4:00 PM
           ]
         }
       },
@@ -347,12 +347,12 @@ async function seedData() {
             { name: 'Full Service', price_cents: 4500 }
           ],
           availability: [
-            { dow: 1, start: '09:00', end: '19:00' },
-            { dow: 2, start: '09:00', end: '19:00' },
-            { dow: 3, start: '09:00', end: '19:00' },
-            { dow: 4, start: '09:00', end: '19:00' },
-            { dow: 5, start: '09:00', end: '19:00' },
-            { dow: 6, start: '09:00', end: '17:00' },
+            { dow: 1, start: '09:00', end: '19:00' }, // Monday 9:00 AM - 7:00 PM
+            { dow: 2, start: '09:00', end: '19:00' }, // Tuesday 9:00 AM - 7:00 PM
+            { dow: 3, start: '09:00', end: '19:00' }, // Wednesday 9:00 AM - 7:00 PM
+            { dow: 4, start: '09:00', end: '19:00' }, // Thursday 9:00 AM - 7:00 PM
+            { dow: 5, start: '09:00', end: '19:00' }, // Friday 9:00 AM - 7:00 PM
+            { dow: 6, start: '09:00', end: '17:00' }, // Saturday 9:00 AM - 5:00 PM
           ]
         }
       }
@@ -666,7 +666,7 @@ async function seedData() {
       {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[4]?.id,
-        status: 'in_progress',
+        status: 'pending',
         racket_photo_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&h=600&fit=crop',
         service_type: 'restring_only',
         string_selection: {
@@ -732,11 +732,11 @@ async function seedData() {
         special_instructions: 'Need it done within 48 hours if possible',
         estimated_price_cents: 4500
       },
-      // Ready for pickup request
+      // Completed request
       {
         player_id: playerProfiles[0]?.id,
         stringer_id: stringerProfiles[1]?.id,
-        status: 'ready_for_pickup',
+        status: 'completed',
         racket_photo_url: 'https://images.unsplash.com/photo-1617883861509-c1625f2c0b5f?w=800&h=600&fit=crop',
         service_type: 'restring_grip',
         string_selection: {
@@ -753,11 +753,10 @@ async function seedData() {
           details: 'Stanford Tennis Courts'
         },
         estimated_price_cents: 4100,
-        accepted_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-        work_started_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-        ready_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        final_price_cents: 4100,
+        tip_cents: 500,
         completion_photo_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
-        completion_notes: 'Strung at 58/56 lbs as requested. Racket is ready for pickup!'
+        completed_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
       },
       // One more pending request for Marco Rodriguez
       {

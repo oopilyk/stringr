@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch, UseFormGetValues } from 'react-hook-form'
-import { StringerOnboardingData, DropoffMethodConfig } from '@stringr/types'
+import { StringerOnboardingData, DropoffMethodConfig } from '@stringerly/types'
 import { AvailabilityScheduler } from './availability-scheduler'
 import { useState } from 'react'
 
@@ -13,37 +13,9 @@ interface Step6AvailabilityProps {
   getValues: UseFormGetValues<StringerOnboardingData>
 }
 
-const DROPOFF_METHODS = [
-  {
-    method: 'meetup' as const,
-    label: 'Meet-up',
-    description: 'Meet player at agreed location',
-    placeholder: 'e.g., Tennis courts, coffee shops, parking lots',
-  },
-  {
-    method: 'pickup' as const,
-    label: 'Pick-up',
-    description: 'Pick up from player location',
-    placeholder: 'e.g., Within 10 miles, $5 fee for distances over 5 miles',
-  },
-  {
-    method: 'ship' as const,
-    label: 'Shipping',
-    description: 'Player ships racket to you',
-    placeholder: 'e.g., Return shipping included, USPS Priority Mail',
-  },
-  {
-    method: 'dropbox' as const,
-    label: 'Drop-box',
-    description: 'Drop-off at your location',
-    placeholder: 'e.g., 123 Main St, accessible 9am-5pm weekdays',
-  },
-]
-
 export function Step6Availability({ register, errors, setValue, watch, getValues }: Step6AvailabilityProps) {
   const dropoffMethods = watch('dropoff_methods') || []
   const availability = watch('availability') || []
-  const maxDailyJobs = watch('max_daily_jobs') || 5
   const flexibleAvailability = watch('flexible_availability') || false
 
   const toggleDropoffMethod = (method: string) => {
@@ -77,45 +49,39 @@ export function Step6Availability({ register, errors, setValue, watch, getValues
 
   return (
     <div className="space-y-6">
-      {/* Dropoff Methods */}
+      {/* Dropoff Details */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          How can players get rackets to you? *
+          Drop-off Instructions *
         </label>
-        <div className="space-y-3">
-          {DROPOFF_METHODS.map((methodConfig) => (
-            <div
-              key={methodConfig.method}
-              className={`border rounded-lg p-4 transition-colors ${
-                isMethodEnabled(methodConfig.method) ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-300'
-              }`}
-            >
-              <label className="flex items-start cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isMethodEnabled(methodConfig.method)}
-                  onChange={() => toggleDropoffMethod(methodConfig.method)}
-                  className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary mt-0.5"
-                />
-                <div className="ml-3 flex-1">
-                  <div className="font-medium text-sm text-gray-900">{methodConfig.label}</div>
-                  <div className="text-xs text-gray-500">{methodConfig.description}</div>
+        <div className="border rounded-lg p-4 bg-blue-50 border-blue-300">
+          <label className="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isMethodEnabled('dropoff')}
+              onChange={() => toggleDropoffMethod('dropoff')}
+              className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary mt-0.5"
+            />
+            <div className="ml-3 flex-1">
+              <div className="font-medium text-sm text-gray-900">Accept Drop-offs at My Location</div>
+              <div className="text-xs text-gray-500">Players will drop off rackets at your address</div>
 
-                  {isMethodEnabled(methodConfig.method) && (
-                    <div className="mt-3">
-                      <input
-                        type="text"
-                        value={getMethodDetails(methodConfig.method)}
-                        onChange={(e) => updateDropoffDetails(methodConfig.method, e.target.value)}
-                        placeholder={methodConfig.placeholder}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-                      />
-                    </div>
-                  )}
+              {isMethodEnabled('dropoff') && (
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    value={getMethodDetails('dropoff')}
+                    onChange={(e) => updateDropoffDetails('dropoff', e.target.value)}
+                    placeholder="e.g., Side door accessible 9am-8pm daily, ring doorbell"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Provide any special instructions for players (where to park, where to place racket, etc.)
+                  </p>
                 </div>
-              </label>
+              )}
             </div>
-          ))}
+          </label>
         </div>
         {errors.dropoff_methods && <p className="mt-2 text-sm text-red-600">{errors.dropoff_methods.message}</p>}
       </div>
@@ -156,31 +122,6 @@ export function Step6Availability({ register, errors, setValue, watch, getValues
           </p>
         </div>
       )}
-
-      {/* Max Daily Jobs */}
-      <div>
-        <label htmlFor="max_daily_jobs" className="block text-sm font-medium text-gray-700 mb-1">
-          Maximum Jobs Per Day *
-        </label>
-        <input
-          id="max_daily_jobs"
-          type="number"
-          {...register('max_daily_jobs', {
-            required: 'Maximum daily jobs is required',
-            valueAsNumber: true,
-            min: { value: 1, message: 'Must be at least 1' },
-            max: { value: 50, message: 'Must be 50 or less' },
-          })}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-          placeholder="5"
-          min="1"
-          max="50"
-        />
-        {errors.max_daily_jobs && <p className="mt-1 text-sm text-red-600">{errors.max_daily_jobs.message}</p>}
-        <p className="mt-1 text-xs text-gray-500">
-          Prevents overbooking. You won't receive more than this many requests per day.
-        </p>
-      </div>
     </div>
   )
 }

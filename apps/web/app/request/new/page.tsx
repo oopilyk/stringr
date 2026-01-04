@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
-import { Button } from '@stringr/ui'
+import { Button, formatTimeRange } from '@stringerly/ui'
 import { RacketPhotoUpload } from '@/components/request/racket-photo-upload'
 import { MessageSquare, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -36,9 +36,11 @@ interface StringerSettings {
   base_price_cents: number
   turnaround_hours: number
   rush_fee_cents: number
+  rush_turnaround_hours?: number
   accepting_requests: boolean
   flexible_availability: boolean
   availability: AvailabilitySlot[]
+  accepts_player_strings?: boolean
 }
 
 function NewRequestForm() {
@@ -50,12 +52,16 @@ function NewRequestForm() {
 
   // Form state
   const [racketPhotoUrl, setRacketPhotoUrl] = useState('')
-  const [serviceType, setServiceType] = useState('restring_only')
+  const serviceType = 'restring_only' // MVP: Only support pure restringing
   const [selectedString, setSelectedString] = useState<StringInventoryItem | null>(null)
+  const [selectedStringCrosses, setSelectedStringCrosses] = useState<StringInventoryItem | null>(null)
+  const [sameString, setSameString] = useState(false)
+  const [playerProvidedStringMains, setPlayerProvidedStringMains] = useState(false)
+  const [playerProvidedStringCrosses, setPlayerProvidedStringCrosses] = useState(false)
   const [tensionMains, setTensionMains] = useState(55)
   const [tensionCrosses, setTensionCrosses] = useState(55)
-  const [sameTension, setSameTension] = useState(true)
-  const [stringPattern, setStringPattern] = useState('existing')
+  const [sameTension, setSameTension] = useState(false)
+  const [stringPattern, setStringPattern] = useState<'existing' | 'two_piece' | 'one_piece' | 'ask_stringer'>('existing')
   const [selectedDropoff, setSelectedDropoff] = useState<DropoffMethod | null>(null)
   const [preferredTimeSlot, setPreferredTimeSlot] = useState<{day: string, start: string, end: string} | null>(null)
   const [specialInstructions, setSpecialInstructions] = useState('')
@@ -121,22 +127,24 @@ function NewRequestForm() {
 
     let total = stringerSettings.base_price_cents
 
-    // Add string cost
-    total += selectedString.price_cents
-
-    // Add service costs
-    const serviceCosts: Record<string, number> = {
-      restring_only: 0,
-      restring_grip: 500, // $5
-      restring_grommets: 1500, // $15
-      full_service: 1800, // $18
+    // Add mains string cost (half price if using different crosses string)
+    if (sameString) {
+      total += selectedString.price_cents
+    } else {
+      total += selectedString.price_cents / 2
     }
-    total += serviceCosts[serviceType] || 0
 
-    // Check for rush service
-    if (preferredDate && stringerSettings.turnaround_hours) {
+    // Add crosses string cost (half price)
+    if (!sameString && selectedStringCrosses) {
+      total += selectedStringCrosses.price_cents / 2
+    }
+
+    // MVP: No additional service costs - restring only
+
+    // Check for rush service using rush_turnaround_hours threshold
+    if (preferredDate && stringerSettings.rush_turnaround_hours) {
       const minDate = new Date()
-      minDate.setHours(minDate.getHours() + stringerSettings.turnaround_hours)
+      minDate.setHours(minDate.getHours() + stringerSettings.rush_turnaround_hours)
       const requestedDate = new Date(preferredDate)
 
       if (requestedDate < minDate) {
@@ -147,6 +155,16 @@ function NewRequestForm() {
     return total
   }
 
+  const isRushOrder = () => {
+    if (!preferredDate || !stringerSettings?.rush_turnaround_hours) return false
+
+    const minDate = new Date()
+    minDate.setHours(minDate.getHours() + stringerSettings.rush_turnaround_hours)
+    const requestedDate = new Date(preferredDate)
+
+    return requestedDate < minDate
+  }
+
   const handleNext = () => {
     // Validation
     if (!racketPhotoUrl) {
@@ -155,7 +173,12 @@ function NewRequestForm() {
     }
 
     if (!selectedString) {
-      setError('Please select a string')
+      setError('Please select a string for mains')
+      return
+    }
+
+    if (!sameString && !selectedStringCrosses) {
+      setError('Please select a string for crosses')
       return
     }
 
@@ -171,7 +194,7 @@ function NewRequestForm() {
     }
 
     // Validate time slot if stringer doesn't have flexible availability
-    if (!stringerSettings?.flexible_availability && !preferredTimeSlot && stringerSettings?.availability?.length > 0) {
+    if (!stringerSettings?.flexible_availability && !preferredTimeSlot && (stringerSettings?.availability?.length ?? 0) > 0) {
       setError('Please select a preferred dropoff time slot')
       return
     }
@@ -182,12 +205,15 @@ function NewRequestForm() {
       racket_photo_url: racketPhotoUrl,
       service_type: serviceType,
       string_selection: selectedString,
+      string_selection_crosses: sameString ? selectedString : selectedStringCrosses,
+      is_hybrid: !sameString,
+      same_string: sameString,
       tension_mains_lbs: tensionMains,
       tension_crosses_lbs: tensionCrosses,
       string_pattern: stringPattern,
       dropoff_method: selectedDropoff,
       preferred_time_slot: preferredTimeSlot,
-      special_instructions: specialInstructions,
+      special_instructions: specialInstructions || null,
       preferred_completion_date: preferredDate || null,
       estimated_price_cents: calculateEstimatedPrice(),
       stringer_name: stringerProfile?.full_name || 'Stringer',
@@ -306,54 +332,59 @@ function NewRequestForm() {
             />
           </div>
 
-          {/* Service Type */}
+          {/* Same String Checkbox */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Service Type
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={sameString}
+                onChange={(e) => {
+                  setSameString(e.target.checked)
+                  if (e.target.checked) {
+                    // When same string is checked, copy mains to crosses
+                    setSelectedStringCrosses(selectedString)
+                    setPlayerProvidedStringCrosses(playerProvidedStringMains)
+                  }
+                }}
+                className="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">Use same string for mains and crosses</span>
             </label>
-            <div className="space-y-2">
-              {[
-                { value: 'restring_only', label: 'Restring Only', cost: 0 },
-                { value: 'restring_grip', label: 'Restring + New Grip', cost: 5 },
-                { value: 'restring_grommets', label: 'Restring + Grommet Replacement', cost: 15 },
-                { value: 'full_service', label: 'Full Service (Restring + Grip + Grommets)', cost: 18 },
-              ].map((option) => (
-                <label key={option.value} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="serviceType"
-                    value={option.value}
-                    checked={serviceType === option.value}
-                    onChange={(e) => setServiceType(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">{option.label}</span>
-                  {option.cost > 0 && (
-                    <span className="text-sm text-gray-600">+${option.cost}</span>
-                  )}
-                </label>
-              ))}
-            </div>
           </div>
 
-          {/* String Selection */}
+          {/* Mains String Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
-              String <span className="text-red-500">*</span>
+              Mains String <span className="text-red-500">*</span>
             </label>
             <select
-              value={selectedString ? `${selectedString.brand}-${selectedString.model}-${selectedString.gauge}` : ''}
+              value={
+                playerProvidedStringMains
+                  ? 'player_provided'
+                  : selectedString
+                    ? `${selectedString.brand}-${selectedString.model}-${selectedString.gauge}`
+                    : ''
+              }
               onChange={(e) => {
                 const selected = stringerSettings?.string_inventory.find(
                   s => `${s.brand}-${s.model}-${s.gauge}` === e.target.value
                 )
                 setSelectedString(selected || null)
+                // If same string is checked, update crosses too
+                if (sameString) {
+                  setSelectedStringCrosses(selected || null)
+                }
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              disabled={playerProvidedStringMains}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
+              <option value="">Select mains string...</option>
+              {playerProvidedStringMains && (
+                <option value="player_provided">Player Provided String</option>
+              )}
               {stringerSettings?.string_inventory.map((string, idx) => (
                 <option key={idx} value={`${string.brand}-${string.model}-${string.gauge}`}>
-                  {string.brand} {string.model} {string.gauge} - ${(string.price_cents / 100).toFixed(2)}
+                  {string.brand} {string.model} {string.gauge} - ${sameString ? (string.price_cents / 100).toFixed(2) : (string.price_cents / 200).toFixed(2)}
                 </option>
               ))}
             </select>
@@ -363,7 +394,97 @@ function NewRequestForm() {
                 Ask the stringer
               </Link>
             </p>
+
+            {/* Player-Provided Mains String Checkbox */}
+            {stringerSettings?.accepts_player_strings && (
+              <div className="mt-3">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={playerProvidedStringMains}
+                    onChange={(e) => {
+                      setPlayerProvidedStringMains(e.target.checked)
+                      if (e.target.checked) {
+                        setSelectedString({ brand: 'Player Provided', model: 'N/A', gauge: 'N/A', quantity: 0, price_cents: 0 })
+                        if (sameString) {
+                          setPlayerProvidedStringCrosses(true)
+                          setSelectedStringCrosses({ brand: 'Player Provided', model: 'N/A', gauge: 'N/A', quantity: 0, price_cents: 0 })
+                        }
+                      } else {
+                        setSelectedString(null)
+                        if (sameString) {
+                          setPlayerProvidedStringCrosses(false)
+                          setSelectedStringCrosses(null)
+                        }
+                      }
+                    }}
+                    className="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {sameString ? "I'll bring my own string (no charge)" : "I'll bring my own mains string (no charge)"}
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
+
+          {/* Crosses String Selection */}
+          {!sameString && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Crosses String <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={
+                  playerProvidedStringCrosses
+                    ? 'player_provided'
+                    : selectedStringCrosses
+                      ? `${selectedStringCrosses.brand}-${selectedStringCrosses.model}-${selectedStringCrosses.gauge}`
+                      : ''
+                }
+                onChange={(e) => {
+                  const selected = stringerSettings?.string_inventory.find(
+                    s => `${s.brand}-${s.model}-${s.gauge}` === e.target.value
+                  )
+                  setSelectedStringCrosses(selected || null)
+                }}
+                disabled={playerProvidedStringCrosses}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">Select crosses string...</option>
+                {playerProvidedStringCrosses && (
+                  <option value="player_provided">Player Provided String</option>
+                )}
+                {stringerSettings?.string_inventory.map((string, idx) => (
+                  <option key={idx} value={`${string.brand}-${string.model}-${string.gauge}`}>
+                    {string.brand} {string.model} {string.gauge} - ${(string.price_cents / 200).toFixed(2)}
+                  </option>
+                ))}
+              </select>
+
+              {/* Player-Provided Crosses String Checkbox */}
+              {stringerSettings?.accepts_player_strings && (
+                <div className="mt-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={playerProvidedStringCrosses}
+                      onChange={(e) => {
+                        setPlayerProvidedStringCrosses(e.target.checked)
+                        if (e.target.checked) {
+                          setSelectedStringCrosses({ brand: 'Player Provided', model: 'N/A', gauge: 'N/A', quantity: 0, price_cents: 0 })
+                        } else {
+                          setSelectedStringCrosses(null)
+                        }
+                      }}
+                      className="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">I'll bring my own crosses string (no charge)</span>
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tension */}
           <div>
@@ -423,58 +544,13 @@ function NewRequestForm() {
             )}
           </div>
 
-          {/* String Pattern */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              String Pattern
-            </label>
-            <div className="space-y-2">
-              {[
-                { value: 'existing', label: 'Keep existing pattern' },
-                { value: 'two_piece', label: 'Change to 2-piece' },
-                { value: 'one_piece', label: 'Change to 1-piece' },
-                { value: 'ask_stringer', label: 'Not sure - ask the stringer' },
-              ].map((option) => (
-                <label key={option.value} className="flex items-center">
-                  <input
-                    type="radio"
-                    name="stringPattern"
-                    value={option.value}
-                    checked={stringPattern === option.value}
-                    onChange={(e) => setStringPattern(e.target.value)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
+          {/* Dropoff Instructions */}
+          {stringerSettings?.dropoff_methods?.[0]?.details && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Drop-off Instructions</h3>
+              <p className="text-sm text-gray-700">{stringerSettings.dropoff_methods[0].details}</p>
             </div>
-          </div>
-
-          {/* Dropoff Method */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Dropoff Method <span className="text-red-500">*</span>
-            </label>
-            <div className="space-y-2">
-              {stringerSettings?.dropoff_methods.map((method, idx) => (
-                <label key={idx} className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="dropoff"
-                    checked={selectedDropoff?.method === method.method}
-                    onChange={() => setSelectedDropoff(method)}
-                    className="mr-3 mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">{method.method.replace(/_/g, ' ')}</div>
-                    {method.details && (
-                      <div className="text-sm text-gray-600 mt-1">{method.details}</div>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Preferred Time Slot */}
           {stringerSettings?.flexible_availability ? (
@@ -507,7 +583,7 @@ function NewRequestForm() {
                               className="mr-3"
                             />
                             <span className="text-sm">
-                              {slot.start} - {slot.end}
+                              {formatTimeRange(slot.start, slot.end)}
                             </span>
                           </label>
                         ))}
@@ -555,6 +631,21 @@ function NewRequestForm() {
             <p className="text-xs text-gray-500 mt-1">
               Standard turnaround: {stringerSettings?.turnaround_hours} hours
             </p>
+
+            {/* Rush Fee Warning */}
+            {isRushOrder() && stringerSettings?.rush_fee_cents && (
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 text-lg">⚡</span>
+                  <div>
+                    <p className="text-sm font-medium text-amber-900">Rush Order Fee Applied</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Completion within {stringerSettings.rush_turnaround_hours} hours requires a rush fee of ${(stringerSettings.rush_fee_cents / 100).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Error Message */}

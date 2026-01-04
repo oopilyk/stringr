@@ -10,13 +10,14 @@ import { ProfileHeader } from '@/components/profile/profile-header'
 import { ProfileStats } from '@/components/profile/profile-stats'
 import { InfoSectionCard } from '@/components/profile/info-section-card'
 import { InlineEditField } from '@/components/profile/inline-edit-field'
+import { LocationAutocomplete } from '@/components/common/location-autocomplete'
 import { RacketGallery } from '@/components/profile/racket-gallery'
 import { Phone, Mail, MapPin, Briefcase, Wrench, DollarSign, Package, Calendar, Image as ImageIcon } from 'lucide-react'
-import { formatPrice } from '@stringr/ui'
+import { formatPrice } from '@stringerly/ui'
 import { ProfileUpdateSchema, validateData } from '@/lib/validation/schemas'
 
 export default function MyProfilePage() {
-  const { profile, isLoading: authLoading } = useAuth()
+  const { user, profile, isLoading: authLoading } = useAuth()
   const queryClient = useQueryClient()
   const [settings, setSettings] = useState<any>(null)
   const [reviews, setReviews] = useState<any[]>([])
@@ -111,6 +112,37 @@ export default function MyProfilePage() {
     setTimeout(() => setMessage(''), 3000)
   }
 
+  const handleLocationChange = async (cityName: string, lat?: number, lng?: number) => {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    if (profile?.id !== user.id) {
+      throw new Error('Unauthorized')
+    }
+
+    const updateData: any = { city: cityName }
+    if (lat !== undefined && lng !== undefined) {
+      updateData.lat = lat
+      updateData.lng = lng
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', user.id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['profile', user.id] })
+    setMessage('Location updated successfully!')
+    setTimeout(() => setMessage(''), 3000)
+  }
+
   if (authLoading || isLoadingData) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -158,10 +190,11 @@ export default function MyProfilePage() {
           reviewCount={reviews.length}
           isOwnProfile={true}
           onAvatarChange={handleAvatarChange}
+          userEmail={user?.email}
         />
 
         {/* Stats (Stringers Only) */}
-        {isStringer && <ProfileStats profile={profile} />}
+        {isStringer && <ProfileStats profile={{ ...profile, ...settings }} />}
 
         {/* Contact Information */}
         <InfoSectionCard
@@ -173,7 +206,7 @@ export default function MyProfilePage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <div className="text-gray-900">{profile.email}</div>
+              <div className="text-gray-900">{user?.email}</div>
             </div>
 
             <InlineEditField
@@ -181,7 +214,8 @@ export default function MyProfilePage() {
               value={profile.phone || ''}
               fieldName="phone"
               type="tel"
-              placeholder="Enter your phone number"
+              placeholder="(555) 123-4567"
+              maxLength={14}
               onSave={handleInlineFieldSave}
             />
 
@@ -190,6 +224,7 @@ export default function MyProfilePage() {
               value={profile.full_name || ''}
               fieldName="full_name"
               placeholder="Enter your full name"
+              maxLength={100}
               onSave={handleInlineFieldSave}
             />
 
@@ -199,16 +234,20 @@ export default function MyProfilePage() {
               fieldName="bio"
               type="textarea"
               placeholder="Tell us about yourself..."
+              maxLength={1000}
               onSave={handleInlineFieldSave}
             />
 
-            <InlineEditField
-              label="City"
-              value={profile.city || ''}
-              fieldName="city"
-              placeholder="e.g., Baltimore, MD"
-              onSave={handleInlineFieldSave}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City
+              </label>
+              <LocationAutocomplete
+                value={profile.city || ''}
+                onChange={handleLocationChange}
+                placeholder="e.g., Baltimore, MD"
+              />
+            </div>
           </div>
         </InfoSectionCard>
 
@@ -219,37 +258,36 @@ export default function MyProfilePage() {
             <InfoSectionCard
               title="Background & Experience"
               icon={<Briefcase className="w-5 h-5 text-primary" />}
-              editLink="/my-profile/edit?section=background"
               defaultOpen={false}
             >
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
                   <dt className="text-gray-500">Years Experience</dt>
                   <dd className="font-medium text-gray-900">
-                    {profile.years_experience ? `${profile.years_experience}+ years` : '—'}
+                    {settings?.years_experience ? `${settings.years_experience}+ years` : '—'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Rackets Strung</dt>
-                  <dd className="font-medium text-gray-900">{profile.rackets_strung_count || '—'}</dd>
+                  <dd className="font-medium text-gray-900">{settings?.rackets_strung_count || '—'}</dd>
                 </div>
                 <div className="md:col-span-2">
                   <dt className="text-gray-500">Certifications</dt>
                   <dd className="font-medium text-gray-900">
-                    {profile.certifications && profile.certifications.length > 0
-                      ? profile.certifications.join(', ')
+                    {settings?.certifications && settings.certifications.length > 0
+                      ? settings.certifications.join(', ')
                       : '—'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Stringing Location</dt>
-                  <dd className="font-medium text-gray-900">{profile.stringing_location || '—'}</dd>
+                  <dd className="font-medium text-gray-900">{settings?.stringing_location || '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Player Levels Served</dt>
                   <dd className="font-medium text-gray-900">
-                    {profile.player_levels_served && profile.player_levels_served.length > 0
-                      ? profile.player_levels_served.join(', ')
+                    {settings?.player_levels_served && settings.player_levels_served.length > 0
+                      ? settings.player_levels_served.join(', ')
                       : '—'}
                   </dd>
                 </div>
@@ -260,7 +298,6 @@ export default function MyProfilePage() {
             <InfoSectionCard
               title="Equipment & Capabilities"
               icon={<Wrench className="w-5 h-5 text-primary" />}
-              editLink="/my-profile/edit?section=equipment"
               defaultOpen={false}
             >
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -299,7 +336,6 @@ export default function MyProfilePage() {
             <InfoSectionCard
               title="Pricing & Services"
               icon={<DollarSign className="w-5 h-5 text-primary" />}
-              editLink="/my-profile/edit?section=pricing"
               defaultOpen={false}
             >
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -338,7 +374,6 @@ export default function MyProfilePage() {
             <InfoSectionCard
               title="String Inventory"
               icon={<Package className="w-5 h-5 text-primary" />}
-              editLink="/my-profile/edit?section=inventory"
               defaultOpen={false}
             >
               {settings.string_inventory && settings.string_inventory.length > 0 ? (
@@ -369,7 +404,6 @@ export default function MyProfilePage() {
             <InfoSectionCard
               title="Availability & Preferences"
               icon={<Calendar className="w-5 h-5 text-primary" />}
-              editLink="/my-profile/edit?section=availability"
               defaultOpen={false}
             >
               <dl className="space-y-3 text-sm">

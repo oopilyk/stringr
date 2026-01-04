@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Button } from '@stringr/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringerly/ui'
 import { ArrowLeft, Check } from 'lucide-react'
 
 export default function PricingPage() {
@@ -63,12 +63,12 @@ export default function PricingPage() {
         <div className="flex items-center space-x-3">
           <img
             src="/logo.jpg"
-            alt="Stringr Logo"
+            alt="Stringerly Logo"
             width={48}
             height={48}
             className="rounded-full object-cover"
           />
-          <span className="text-2xl font-bold text-primary">STRINGR</span>
+          <span className="text-2xl font-bold text-primary">STRINGERLY</span>
         </div>
 
         <Button
@@ -174,7 +174,7 @@ export default function PricingPage() {
             className="h-12 px-8"
             onClick={() => router.push('/auth/signup')}
           >
-            Get Started with Stringr
+            Get Started with Stringerly
           </Button>
         </div>
       </div>

@@ -13,8 +13,8 @@ import {
   DialogTitle,
   Button,
   formatPrice
-} from '@stringr/ui'
-import type { StringerSearchResult, CreateRequestFormData, RACQUET_PRESETS, STRING_PRESETS } from '@stringr/types'
+} from '@stringerly/ui'
+import type { StringerSearchResult, CreateRequestFormData, RACQUET_PRESETS, STRING_PRESETS } from '@stringerly/types'
 
 interface CreateRequestDialogProps {
   stringer: StringerSearchResult
@@ -37,15 +37,12 @@ export function CreateRequestDialog({
     register,
     handleSubmit,
     formState: { errors },
-    reset,
-    watch
+    reset
   } = useForm<CreateRequestFormData>({
     defaultValues: {
-      dropoff_method: 'meetup'
+      dropoff_method: 'dropoff'
     }
   })
-
-  const dropoffMethod = watch('dropoff_method')
 
   const createRequestMutation = useMutation({
     mutationFn: async (data: CreateRequestFormData) => {
@@ -170,36 +167,23 @@ export function CreateRequestDialog({
 
           {/* Logistics */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Logistics</h3>
-            
+            <h3 className="font-medium text-gray-900">Drop-off Details</h3>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Drop-off Method
+                Drop-off Address
               </label>
-              <select
-                {...register('dropoff_method')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="meetup">Meet up</option>
-                <option value="pickup">Pickup from me</option>
-                <option value="ship">Ship to stringer</option>
-                <option value="dropbox">Drop box</option>
-              </select>
+              <input
+                type="text"
+                {...register('address')}
+                placeholder="Stringer's address will be provided after acceptance"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-gray-50"
+                disabled
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                You'll drop off your racket at the stringer's location
+              </p>
             </div>
-
-            {(dropoffMethod === 'meetup' || dropoffMethod === 'pickup' || dropoffMethod === 'dropbox') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address/Location
-                </label>
-                <input
-                  type="text"
-                  {...register('address')}
-                  placeholder="Enter address or meeting location"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            )}
           </div>
 
           {/* Additional Notes */}

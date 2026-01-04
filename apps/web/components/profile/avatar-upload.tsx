@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { Camera, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
 import { AvatarUploadSchema, validateData } from '@/lib/validation/schemas'

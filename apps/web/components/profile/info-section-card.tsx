@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, ReactNode } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@stringr/ui'
-import { Button } from '@stringr/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@stringerly/ui'
+import { Button } from '@stringerly/ui'
 import { ChevronDown, ChevronUp, Edit } from 'lucide-react'
 import Link from 'next/link'
 

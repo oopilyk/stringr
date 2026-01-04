@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Navigation } from '@/components/layout/navigation'
 import { createClient } from '@/lib/supabase'
 import { Loader2, Send, Search } from 'lucide-react'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 
 interface ConversationListItem {
   id: string

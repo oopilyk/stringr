@@ -1,8 +1,8 @@
-# Stringr 🎾
+# Stringerly 🎾
 
 **Tennis racquet stringing marketplace - "Uber for stringing"**
 
-Stringr connects local tennis stringers with players who need quick, affordable racquet restringing. Think of it as Uber for tennis stringing with lightweight social features.
+Stringerly connects local tennis stringers with players who need quick, affordable racquet restringing. Think of it as Uber for tennis stringing with lightweight social features.
 
 ## 🎯 Product Vision
 
@@ -17,7 +17,7 @@ Stringr connects local tennis stringers with players who need quick, affordable 
 
 ### Monorepo Structure
 ```
-stringr/
+stringerly/
 ├── apps/
 │   ├── web/          # Next.js 14 web app
 │   └── mobile/       # Expo React Native app
@@ -59,7 +59,7 @@ stringr/
 
 ```bash
 git clone <repository-url>
-cd stringr
+cd stringerly
 npm install
 ```
 

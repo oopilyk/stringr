@@ -1,5 +1,5 @@
 import { cn, getStatusColor, formatStatusText } from "../lib/utils"
-import type { RequestStatus } from "@stringr/types"
+import type { RequestStatus } from "@stringerly/types"
 
 interface StatusBadgeProps {
   status: RequestStatus

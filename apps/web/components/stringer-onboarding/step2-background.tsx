@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData, CERTIFICATIONS, PLAYER_LEVELS, STRINGING_LOCATIONS } from '@stringr/types'
+import { StringerOnboardingData, CERTIFICATIONS, PLAYER_LEVELS } from '@stringerly/types'
 import { useState } from 'react'
 
 interface Step2BackgroundProps {
@@ -102,25 +102,6 @@ export function Step2Background({ register, errors, setValue, watch }: Step2Back
           ))}
         </div>
         <p className="mt-1 text-xs text-gray-500">Select all that apply</p>
-      </div>
-
-      {/* Stringing Location */}
-      <div>
-        <label htmlFor="stringing_location" className="block text-sm font-medium text-gray-700 mb-1">
-          Where do you string?
-        </label>
-        <select
-          id="stringing_location"
-          {...register('stringing_location')}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-        >
-          <option value="">Select...</option>
-          {STRINGING_LOCATIONS.map((location: string) => (
-            <option key={location} value={location}>
-              {location}
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Player Levels Served */}

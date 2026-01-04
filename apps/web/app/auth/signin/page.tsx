@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringerly/ui'
 import { Search } from 'lucide-react'
 
 export default function SignInPage() {
@@ -101,12 +101,12 @@ export default function SignInPage() {
           <div className="flex items-center space-x-3">
             <img
               src="/logo.jpg"
-              alt="Stringr Logo"
+              alt="Stringerly Logo"
               width={48}
               height={48}
               className="rounded-full object-cover"
             />
-            <span className="text-2xl font-bold text-primary">STRINGR</span>
+            <span className="text-2xl font-bold text-primary">STRINGERLY</span>
           </div>
 
           <div className="flex md:hidden items-center space-x-2">

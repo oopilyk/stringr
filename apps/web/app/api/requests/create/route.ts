@@ -17,10 +17,13 @@ export async function POST(request: Request) {
 
     // Parse and validate request body
     const body = await request.json()
+    console.log('Received request body:', JSON.stringify(body, null, 2))
 
     // SECURITY: Server-side validation with Zod
     const validationResult = validateData(CreateRequestSchema, body)
     if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error)
+      console.log('Failed fields:', JSON.stringify(body, null, 2))
       return NextResponse.json(
         { error: validationResult.error },
         { status: 400 }
@@ -51,18 +54,23 @@ export async function POST(request: Request) {
     }
 
     // SECURITY: Verify selected string exists in stringer's inventory
-    const stringExists = stringerSettings.string_inventory?.some(
-      (s: any) =>
-        s.brand === data.string_selection.brand &&
-        s.model === data.string_selection.model &&
-        s.gauge === data.string_selection.gauge
-    )
+    // Skip check if player is providing their own string
+    const isPlayerProvidedString = data.string_selection.brand === 'Player Provided'
 
-    if (!stringExists) {
-      return NextResponse.json(
-        { error: 'Selected string is not available in stringer inventory' },
-        { status: 400 }
+    if (!isPlayerProvidedString) {
+      const stringExists = stringerSettings.string_inventory?.some(
+        (s: any) =>
+          s.brand === data.string_selection.brand &&
+          s.model === data.string_selection.model &&
+          s.gauge === data.string_selection.gauge
       )
+
+      if (!stringExists) {
+        return NextResponse.json(
+          { error: 'Selected string is not available in stringer inventory' },
+          { status: 400 }
+        )
+      }
     }
 
     // SECURITY: Verify dropoff method exists in stringer's options

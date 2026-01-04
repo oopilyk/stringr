@@ -1,4 +1,4 @@
-import { StringerOnboardingData } from '@stringr/types'
+import { StringerOnboardingData } from '@stringerly/types'
 
 export function calculateProfileCompleteness(data: StringerOnboardingData): number {
   let score = 0
@@ -11,11 +11,10 @@ export function calculateProfileCompleteness(data: StringerOnboardingData): numb
   if (data.bio) score += 3
 
   // Step 2: Background (15%)
-  if (data.years_experience !== undefined && data.years_experience !== null) score += 3
-  if (data.rackets_strung_count !== undefined && data.rackets_strung_count !== null) score += 3
-  if (data.certifications && data.certifications.length > 0) score += 3
-  if (data.stringing_location) score += 3
-  if (data.player_levels_served && data.player_levels_served.length > 0) score += 3
+  if (data.years_experience !== undefined && data.years_experience !== null) score += 5
+  if (data.rackets_strung_count !== undefined && data.rackets_strung_count !== null) score += 5
+  if (data.certifications && data.certifications.length > 0) score += 2.5
+  if (data.player_levels_served && data.player_levels_served.length > 0) score += 2.5
 
   // Step 3: Equipment (15%)
   if (data.machine_brand) score += 3
@@ -35,7 +34,8 @@ export function calculateProfileCompleteness(data: StringerOnboardingData): numb
 
   // Step 6: Availability (20%)
   if (data.dropoff_methods && data.dropoff_methods.length > 0) score += 10
-  if (data.availability && data.availability.length > 0) score += 10
+  // Give points for either having availability blocks OR having flexible_availability checked
+  if ((data.availability && data.availability.length > 0) || data.flexible_availability) score += 10
 
   return Math.min(score, 100)
 }

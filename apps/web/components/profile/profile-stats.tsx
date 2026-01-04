@@ -1,7 +1,8 @@
 'use client'
 
-import { Profile } from '@stringr/types'
+import { Profile } from '@stringerly/types'
 import { Award, Target, Star, TrendingUp } from 'lucide-react'
+import { calculateProfileCompleteness } from '@/lib/utils/profile-completeness'
 
 interface ProfileStatsProps {
   profile: Profile & {
@@ -9,10 +10,29 @@ interface ProfileStatsProps {
     rackets_strung_count?: number
     certifications?: string[]
     profile_completion_percentage?: number
+    // Stringer settings fields for completeness calculation
+    machine_brand?: string
+    machine_model?: string
+    machine_type?: string
+    base_price_cents?: number
+    turnaround_hours?: number
+    accepts_rush?: boolean
+    rush_fee_cents?: number
+    string_inventory?: any[]
+    dropoff_methods?: any[]
+    availability?: any[]
+    flexible_availability?: boolean
+    max_tension?: number
+    supported_racket_types?: string[]
+    player_levels_served?: string[]
+    stringing_location?: string
   }
 }
 
 export function ProfileStats({ profile }: ProfileStatsProps) {
+  // Calculate profile completeness dynamically
+  const profileCompletion = calculateProfileCompleteness(profile as any)
+
   const stats = [
     {
       label: 'Rackets Strung',
@@ -34,7 +54,7 @@ export function ProfileStats({ profile }: ProfileStatsProps) {
     },
     {
       label: 'Profile Complete',
-      value: `${profile.profile_completion_percentage || 0}%`,
+      value: `${profileCompletion}%`,
       icon: Star,
       show: true
     }
@@ -61,20 +81,18 @@ export function ProfileStats({ profile }: ProfileStatsProps) {
       </div>
 
       {/* Profile Completeness Bar */}
-      {profile.profile_completion_percentage !== undefined && (
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Profile Completeness</span>
-            <span className="text-sm font-bold text-primary">{profile.profile_completion_percentage}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${profile.profile_completion_percentage}%` }}
-            />
-          </div>
+      <div className="mt-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-gray-700">Profile Completeness</span>
+          <span className="text-sm font-bold text-primary">{profileCompletion}%</span>
         </div>
-      )}
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div
+            className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
+            style={{ width: `${profileCompletion}%` }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

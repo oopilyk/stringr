@@ -70,8 +70,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Redirect to discover if authenticated user visits auth pages
-  if (session && req.nextUrl.pathname.startsWith('/auth')) {
+  // Redirect to discover if authenticated user visits auth pages (except stringer-signup for profile editing)
+  if (session && req.nextUrl.pathname.startsWith('/auth') && req.nextUrl.pathname !== '/auth/stringer-signup') {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/discover'
     return NextResponse.redirect(redirectUrl)

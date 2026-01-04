@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringerly/ui'
 import { SignInSchema, MagicLinkSchema, validateData } from '@/lib/validation/schemas'
 
 export default function LoginPage() {
@@ -115,12 +115,12 @@ export default function LoginPage() {
         <div className="flex items-center space-x-3">
           <img
             src="/logo.jpg"
-            alt="Stringr Logo"
+            alt="Stringerly Logo"
             width={48}
             height={48}
             className="rounded-full object-cover"
           />
-          <span className="text-2xl font-bold text-primary">STRINGR</span>
+          <span className="text-2xl font-bold text-primary">STRINGERLY</span>
         </div>
 
         <div className="flex items-center space-x-4">

@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Navigation } from '@/components/layout/navigation'
-import { Button } from '@stringr/ui'
-import { StatusBadge, formatPrice } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
+import { StatusBadge, formatPrice, formatTimeRange } from '@stringerly/ui'
 import { ChevronLeft, Calendar, Clock, MapPin, MessageSquare, CheckCircle, XCircle, DollarSign, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -12,11 +12,12 @@ import Link from 'next/link'
 import { StringingProgressPanel } from '@/components/requests/stringing-progress-panel'
 import { PlayerRequestStatus } from '@/components/requests/player-request-status'
 import { AcceptJobModal } from '@/components/requests/accept-job-modal'
+import { RequestStatus } from '@stringerly/types'
 
 interface Request {
   id: string
   created_at: string
-  status: string
+  status: RequestStatus
   player_id: string
   stringer_id: string
   racket_photo_url: string
@@ -44,8 +45,13 @@ interface Request {
   estimated_price_cents: number
   final_price_cents?: number | null
   tip_cents?: number
-  completion_photo_url?: string
-  completed_at?: string
+  completion_photo_url: string | null
+  completed_at: string | null
+  estimated_completion: string | null
+  work_started_at: string | null
+  ready_at: string | null
+  accepted_at: string | null
+  completion_notes: string | null
   player?: {
     full_name: string
     avatar_url?: string
@@ -248,7 +254,7 @@ export default function RequestDetailsPage() {
             </div>
 
             <div className="text-right">
-              {request.status === 'completed' ? (
+              {request.status === ('completed' as RequestStatus) ? (
                 <>
                   <div className="text-3xl font-bold text-green-600">
                     {formatPrice((request.final_price_cents || request.estimated_price_cents) + (request.tip_cents || 0))}
@@ -271,7 +277,7 @@ export default function RequestDetailsPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Photos Section - Show both for completed requests */}
-            {request.status === 'completed' && request.completion_photo_url ? (
+            {request.status === ('completed' as RequestStatus) && request.completion_photo_url ? (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Before & After</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -355,7 +361,7 @@ export default function RequestDetailsPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Financial Summary - Only for completed requests */}
-            {request.status === 'completed' && (
+            {request.status === ('completed' as RequestStatus) && (
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-md p-6 border-2 border-green-200">
                 <div className="flex items-center space-x-2 mb-4">
                   <DollarSign className="w-6 h-6 text-green-600" />
@@ -420,15 +426,15 @@ export default function RequestDetailsPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-4">Dropoff Details</h2>
 
               <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-900">{request.dropoff_method.method}</p>
-                    {request.dropoff_method.details && (
+                {request.dropoff_method?.details && (
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Drop-off Instructions</p>
                       <p className="text-sm text-gray-600 mt-1">{request.dropoff_method.details}</p>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {request.preferred_time_slot && (
                   <div className="flex items-start space-x-3">
@@ -439,7 +445,7 @@ export default function RequestDetailsPage() {
                         {request.preferred_time_slot.day}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {request.preferred_time_slot.start} - {request.preferred_time_slot.end}
+                        {formatTimeRange(request.preferred_time_slot.start, request.preferred_time_slot.end)}
                       </p>
                     </div>
                   </div>
@@ -464,7 +470,7 @@ export default function RequestDetailsPage() {
             </div>
 
             {/* Actions - Only show for pending requests */}
-            {isStringer && request.status === 'pending' && (
+            {isStringer && request.status === ('pending' as RequestStatus) && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Actions</h2>
                 <div className="space-y-3">
@@ -501,7 +507,7 @@ export default function RequestDetailsPage() {
               />
             )}
 
-            {(isPlayer || (isStringer && request.status !== 'pending')) && (
+            {(isPlayer || (isStringer && request.status !== ('pending' as RequestStatus))) && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <Button variant="outline" className="w-full">
                   <MessageSquare className="w-4 h-4 mr-2" />

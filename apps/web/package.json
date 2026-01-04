@@ -1,5 +1,5 @@
 {
-  "name": "@stringr/web",
+  "name": "@stringerly/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@stringr/types": "*",
-    "@stringr/ui": "*",
+    "@stringerly/types": "*",
+    "@stringerly/ui": "*",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/ssr": "^0.7.0",

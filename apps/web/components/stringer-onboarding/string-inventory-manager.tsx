@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { StringInventoryItem, STRING_PRESETS } from '@stringr/types'
-import { Button, Card } from '@stringr/ui'
+import { StringInventoryItem, STRING_PRESETS } from '@stringerly/types'
+import { Button, Card } from '@stringerly/ui'
 import { Plus, Edit, Trash2, Check, X, DollarSign } from 'lucide-react'
 
 interface StringInventoryManagerProps {
@@ -69,7 +69,7 @@ export function StringInventoryManager({ inventory, onChange }: StringInventoryM
       brand,
       model,
       gauge,
-      quantity: 10,
+      quantity: 1,
       price_cents: 1500,
     }
     onChange([...inventory, newItem])
@@ -184,6 +184,80 @@ export function StringInventoryManager({ inventory, onChange }: StringInventoryM
               </div>
             </Card>
           )
+        )}
+
+        {/* New item being added (not yet in inventory) */}
+        {editingId && editForm && !inventory.some(item => item.id === editingId) && (
+          <Card className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Brand*</label>
+                <input
+                  type="text"
+                  placeholder="Babolat"
+                  value={editForm?.brand || ''}
+                  onChange={(e) => setEditForm({ ...editForm!, brand: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Model*</label>
+                <input
+                  type="text"
+                  placeholder="RPM Blast"
+                  value={editForm?.model || ''}
+                  onChange={(e) => setEditForm({ ...editForm!, model: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Gauge*</label>
+                <input
+                  type="text"
+                  placeholder="17"
+                  value={editForm?.gauge || ''}
+                  onChange={(e) => setEditForm({ ...editForm!, gauge: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Qty in Stock*</label>
+                <input
+                  type="number"
+                  placeholder="10"
+                  value={editForm?.quantity || 0}
+                  onChange={(e) => setEditForm({ ...editForm!, quantity: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Price per Set*</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="15.00"
+                    value={editForm?.price_cents ? (editForm.price_cents / 100).toFixed(2) : '0.00'}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm!, price_cents: Math.round((parseFloat(e.target.value) || 0) * 100) })
+                    }
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Button type="button" size="sm" onClick={saveItem}>
+                <Check className="w-3 h-3 mr-1" />
+                Save
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={cancelEdit}>
+                <X className="w-3 h-3 mr-1" />
+                Cancel
+              </Button>
+            </div>
+          </Card>
         )}
       </div>
 

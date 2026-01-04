@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { ArrowLeft } from 'lucide-react'
 
 export default function AboutPage() {
@@ -14,12 +14,12 @@ export default function AboutPage() {
         <div className="flex items-center space-x-3">
           <img
             src="/logo.jpg"
-            alt="Stringr Logo"
+            alt="Stringerly Logo"
             width={48}
             height={48}
             className="rounded-full object-cover"
           />
-          <span className="text-2xl font-bold text-primary">STRINGR</span>
+          <span className="text-2xl font-bold text-primary">STRINGERLY</span>
         </div>
 
         <Button
@@ -39,7 +39,7 @@ export default function AboutPage() {
             About the Creators
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Meet the Johns Hopkins University students behind Stringr
+            Meet the Johns Hopkins University students behind Stringerly
           </p>
         </div>
 
@@ -92,9 +92,9 @@ export default function AboutPage() {
         <div className="mt-16 bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
           <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Our Mission</h3>
           <p className="text-gray-600 leading-relaxed text-center">
-            We created Stringr to solve a common problem in the tennis community: finding reliable,
+            We created Stringerly to solve a common problem in the tennis community: finding reliable,
             quality stringers. As tennis players ourselves, we understand the importance of having
-            your racket strung correctly. Stringr connects players with certified stringers, making
+            your racket strung correctly. Stringerly connects players with certified stringers, making
             it easier than ever to maintain your equipment and focus on your game.
           </p>
         </div>

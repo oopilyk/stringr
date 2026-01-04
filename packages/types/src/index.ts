@@ -1,16 +1,18 @@
 import { z } from 'zod';
 
-// Core types  
+// Core types
 export type RequestStatus = 'requested' | 'accepted' | 'in_progress' | 'ready' | 'completed' | 'canceled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
-export type DropoffMethod = 'meetup' | 'pickup' | 'ship' | 'dropbox';
+export type DropoffMethod = 'dropoff';
 
 // Zod schemas for validation
 export const RequestStatusSchema = z.enum(['requested', 'accepted', 'in_progress', 'ready', 'completed', 'canceled']);
 export const PaymentStatusSchema = z.enum(['unpaid', 'paid', 'refunded']);
-export const DropoffMethodSchema = z.enum(['meetup', 'pickup', 'ship', 'dropbox']);
+export const DropoffMethodSchema = z.enum(['dropoff']);
 
 // Profile types
+export type UserRole = 'player' | 'stringer';
+
 export interface Profile {
   id: string;
   full_name?: string;
@@ -20,6 +22,7 @@ export interface Profile {
   city?: string;
   lat?: number;
   lng?: number;
+  role?: UserRole;
   created_at?: string;
   updated_at?: string;
 }
@@ -33,6 +36,7 @@ export const ProfileSchema = z.object({
   city: z.string().optional(),
   lat: z.number().optional(),
   lng: z.number().optional(),
+  role: z.enum(['player', 'stringer']).optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
@@ -360,6 +364,7 @@ export interface ExtendedStringerSettings extends StringerSettings {
   pricing_notes?: string;
   accepts_player_strings?: boolean;
   discount_bulk_jobs?: number;
+  rush_turnaround_hours?: number;
   flexible_availability?: boolean;
   onboarding_step?: number;
   onboarding_completed_at?: string;
@@ -376,6 +381,7 @@ export const ExtendedStringerSettingsSchema = StringerSettingsSchema.extend({
   pricing_notes: z.string().max(500).optional(),
   accepts_player_strings: z.boolean().optional(),
   discount_bulk_jobs: z.number().int().min(0).max(50).optional(),
+  rush_turnaround_hours: z.number().int().min(1).optional(),
   onboarding_step: z.number().int().min(1).max(7).optional(),
   onboarding_completed_at: z.string().optional(),
 });
@@ -411,6 +417,7 @@ export interface StringerOnboardingData {
   turnaround_hours: number;
   accepts_rush: boolean;
   rush_fee_cents: number;
+  rush_turnaround_hours?: number;
   pricing_notes?: string;
   discount_bulk_jobs?: number;
 
@@ -421,16 +428,17 @@ export interface StringerOnboardingData {
   // Step 6: Availability & Preferences
   dropoff_methods?: DropoffMethodConfig[];
   availability?: AvailabilityBlock[];
-  max_daily_jobs: number;
+  flexible_availability?: boolean;
+  max_daily_jobs?: number;
 }
 
 // Step-specific schemas for validation
 export const Step1Schema = z.object({
-  email: z.string().email("Valid email required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  full_name: z.string().min(2, "Name is required"),
-  phone: z.string().min(10, "Valid phone number required"),
-  city: z.string().min(2, "City is required"),
+  email: z.string().email("Valid email required").max(100, "Email too long").transform(val => val.toLowerCase().trim()),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password too long"),
+  full_name: z.string().min(2, "Name is required").max(100, "Name too long"),
+  phone: z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/, "Phone must be in format: (XXX) XXX-XXXX"),
+  city: z.string().min(2, "City is required").max(100, "City name too long"),
   lat: z.number().optional(),
   lng: z.number().optional(),
 });
@@ -457,6 +465,7 @@ export const Step4Schema = z.object({
   turnaround_hours: z.number().int().min(1),
   accepts_rush: z.boolean(),
   rush_fee_cents: z.number().int().min(0).max(5000),
+  rush_turnaround_hours: z.number().int().min(1).optional(),
   pricing_notes: z.string().max(500).optional(),
   discount_bulk_jobs: z.number().int().min(0).max(50).optional(),
 });
@@ -469,40 +478,41 @@ export const Step5Schema = z.object({
 export const Step6Schema = z.object({
   dropoff_methods: z.array(DropoffMethodConfigSchema).min(1, "Select at least one dropoff method"),
   availability: z.array(AvailabilityBlockSchema).optional(),
-  max_daily_jobs: z.number().int().min(1).max(50),
+  flexible_availability: z.boolean().optional(),
+  max_daily_jobs: z.number().int().min(1).max(50).optional(),
 });
 
 // Error types
-export class StringrError extends Error {
+export class StringerlyError extends Error {
   constructor(
     message: string,
     public code: string,
     public statusCode: number = 400
   ) {
     super(message);
-    this.name = 'StringrError';
+    this.name = 'StringerlyError';
   }
 }
 
-export class ValidationError extends StringrError {
+export class ValidationError extends StringerlyError {
   constructor(message: string) {
     super(message, 'VALIDATION_ERROR', 400);
   }
 }
 
-export class NotFoundError extends StringrError {
+export class NotFoundError extends StringerlyError {
   constructor(resource: string) {
     super(`${resource} not found`, 'NOT_FOUND', 404);
   }
 }
 
-export class UnauthorizedError extends StringrError {
+export class UnauthorizedError extends StringerlyError {
   constructor(message: string = 'Unauthorized') {
     super(message, 'UNAUTHORIZED', 401);
   }
 }
 
-export class ConflictError extends StringrError {
+export class ConflictError extends StringerlyError {
   constructor(message: string) {
     super(message, 'CONFLICT', 409);
   }

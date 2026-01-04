@@ -123,7 +123,14 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { succes
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
-      return { success: false, error: firstError.message }
+      const path = firstError.path.join('.')
+      const message = `${path}: ${firstError.message}`
+      console.error('Validation error details:', {
+        path: firstError.path,
+        message: firstError.message,
+        received: firstError.code === 'invalid_type' ? (firstError as any).received : 'N/A'
+      })
+      return { success: false, error: message }
     }
     return { success: false, error: 'Validation failed' }
   }
@@ -153,31 +160,49 @@ export const CreateRequestSchema = z.object({
   // String selection - full snapshot
   string_selection: z.object({
     brand: z.string().min(1).max(50),
-    model: z.string().min(1).max(50),
-    gauge: z.string().min(1).max(20),
+    model: z.preprocess(
+      (val) => (val === '' ? 'N/A' : val),
+      z.string().min(1).max(50)
+    ),
+    gauge: z.preprocess(
+      (val) => (val === '' ? 'N/A' : val),
+      z.string().min(1).max(20)
+    ),
     price_cents: z.number().min(0).max(50000),
   }),
 
   tension_mains_lbs: z.number().min(10).max(90),
   tension_crosses_lbs: z.number().min(10).max(90),
 
-  string_pattern: z.enum(['existing', 'two_piece', 'one_piece', 'ask_stringer']),
+  string_pattern: z.preprocess(
+    (val) => val || 'existing',
+    z.enum(['existing', 'two_piece', 'one_piece', 'ask_stringer'])
+  ),
 
   // Dropoff method - full snapshot
   dropoff_method: z.object({
     method: z.string().min(1).max(100),
-    details: z.string().max(500).nullable().optional(),
+    details: z.preprocess(
+      (val) => (val === '' ? null : val),
+      z.string().max(500).nullable().optional()
+    ),
   }),
 
   // Preferred time slot for dropoff
   preferred_time_slot: z.object({
-    day: z.string(),
-    start: z.string(),
-    end: z.string(),
+    day: z.string().min(1),
+    start: z.string().min(1),
+    end: z.string().min(1),
   }).nullable().optional(),
 
-  special_instructions: z.string().max(1000).nullable().optional(),
-  preferred_completion_date: z.string().nullable().optional(), // ISO date string
+  special_instructions: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.string().max(1000).nullable().optional()
+  ),
+  preferred_completion_date: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.string().nullable().optional()
+  ),
   estimated_price_cents: z.number().min(0),
 })
 

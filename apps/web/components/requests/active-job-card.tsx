@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
-import { Check, Circle, Loader2, Camera, AlertCircle, Clock, User, DollarSign, ChevronRight } from 'lucide-react'
+import { Button } from '@stringerly/ui'
+import { Check, Circle, Loader2, Camera, AlertCircle, Clock, User, DollarSign, ChevronRight, QrCode, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { formatPrice } from '@stringr/ui'
+import { formatPrice } from '@stringerly/ui'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface StringingTask {
   id: string
@@ -78,6 +79,7 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
   const [completionNotes, setCompletionNotes] = useState('')
   const [isMarkingReady, setIsMarkingReady] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [uploadUrl, setUploadUrl] = useState('')
   const supabase = createClient()
   const router = useRouter()
 
@@ -85,6 +87,24 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
     fetchTasks()
     subscribeToTaskUpdates()
   }, [request.id])
+
+  // Generate upload URL when all required tasks are complete
+  useEffect(() => {
+    const allRequiredDone = tasks
+      .filter(t => REQUIRED_TASKS.includes(t.task_type))
+      .every(t => t.status === 'completed')
+
+    const photoTask = tasks.find(t => t.task_type === 'completion_photo')
+    const hasPhoto = !!photoTask?.photo_url
+
+    if (allRequiredDone && !hasPhoto && !uploadUrl) {
+      const token = `${request.id}-${Date.now()}`
+      // Use the public URL from env var, fallback to window location for dev
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+      const url = `${baseUrl}/upload-photo/${token}`
+      setUploadUrl(url)
+    }
+  }, [tasks, request.id, uploadUrl])
 
   const fetchTasks = async () => {
     try {
@@ -189,10 +209,41 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
     }
   }
 
+  const handleRemovePhoto = async () => {
+    if (!confirm('Are you sure you want to remove this photo? You can upload a new one.')) return
+
+    try {
+      setUploadingPhoto(true)
+      const photoTask = tasks.find(t => t.task_type === 'completion_photo')
+
+      if (photoTask) {
+        const response = await fetch(`/api/requests/${request.id}/tasks/${photoTask.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'pending',
+            photo_url: null
+          })
+        })
+
+        if (response.ok) {
+          await fetchTasks()
+        } else {
+          alert('Failed to remove photo')
+        }
+      }
+    } catch (error) {
+      console.error('Error removing photo:', error)
+      alert('Failed to remove photo')
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
   const markReady = async () => {
     const photoTask = tasks.find(t => t.task_type === 'completion_photo')
-    if (!photoTask || photoTask.status !== 'completed' || !photoTask.photo_url) {
-      alert('Please complete the completion photo task first')
+    if (!photoTask?.photo_url) {
+      alert('Please upload a completion photo first')
       return
     }
 
@@ -227,24 +278,40 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
     .filter(t => REQUIRED_TASKS.includes(t.task_type))
     .every(t => t.status === 'completed')
 
-  const canMarkReady = allRequiredComplete &&
-    tasks.find(t => t.task_type === 'completion_photo')?.status === 'completed'
+  const completionPhotoTask = tasks.find(t => t.task_type === 'completion_photo')
+  const hasCompletionPhoto = !!completionPhotoTask?.photo_url
+  const canMarkReady = allRequiredComplete && hasCompletionPhoto
 
   const currentTask = tasks.find(t => t.status === 'in_progress') ||
                       tasks.find(t => t.status === 'pending' && REQUIRED_TASKS.includes(t.task_type))
 
+  // Determine status display
+  const isReadyForPickup = request.status === 'ready_for_pickup'
+  const statusText = isReadyForPickup ? 'Ready for Pickup' :
+                     request.status === 'accepted' ? 'Accepted' : 'In Progress'
+  const headerColor = isReadyForPickup ? 'from-green-600 to-emerald-600' : 'from-blue-600 to-indigo-600'
+  const bgColor = isReadyForPickup ? 'from-green-50 to-emerald-50' : 'from-blue-50 to-indigo-50'
+  const borderColor = isReadyForPickup ? 'border-green-200' : 'border-blue-200'
+  const iconColor = isReadyForPickup ? 'text-green-600' : 'text-blue-600'
+
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-blue-200 overflow-hidden">
+    <div className={`bg-gradient-to-br ${bgColor} rounded-xl shadow-lg border-2 ${borderColor} overflow-hidden`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+      <div className={`bg-gradient-to-r ${headerColor} px-6 py-4`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-              <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+              {isReadyForPickup ? (
+                <Check className={`w-6 h-6 ${iconColor}`} />
+              ) : (
+                <Loader2 className={`w-6 h-6 ${iconColor} animate-spin`} />
+              )}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Active Job</h2>
-              <p className="text-blue-100 text-sm">In Progress</p>
+              <h2 className="text-xl font-bold text-white">
+                {isReadyForPickup ? 'Job Complete' : 'Active Job'}
+              </h2>
+              <p className={`${isReadyForPickup ? 'text-green-100' : 'text-blue-100'} text-sm`}>{statusText}</p>
             </div>
           </div>
           <div className="text-right">
@@ -314,7 +381,7 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
       </div>
 
       {/* Current/Next Task - Prominent Display */}
-      {currentTask && (
+      {!isReadyForPickup && currentTask && (
         <div className="p-8 bg-gradient-to-br from-white to-blue-50 border-b-4 border-blue-300">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -476,8 +543,43 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
         </div>
       </div>
 
+      {/* Ready for Pickup Section */}
+      {isReadyForPickup && (
+        <div className="p-6 border-t border-green-200">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-2 text-green-800 mb-2">
+              <Check className="w-5 h-5" />
+              <span className="font-semibold">Job Complete!</span>
+            </div>
+            <p className="text-sm text-green-700">
+              This racket is ready for {player.full_name} to pick up. Waiting for player confirmation.
+            </p>
+          </div>
+
+          {request.ready_at && (
+            <p className="text-sm text-gray-600 mb-4">
+              Marked ready: {new Date(request.ready_at).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              })}
+            </p>
+          )}
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => router.push(`/request/${request.id}`)}
+          >
+            View Details
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      )}
+
       {/* Mark Ready Section */}
-      {allRequiredComplete && (
+      {!isReadyForPickup && allRequiredComplete && (
         <div className="p-6 border-t border-blue-200 bg-gradient-to-br from-green-50 to-emerald-50">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -492,12 +594,129 @@ export function ActiveJobCard({ request, player }: ActiveJobCardProps) {
             />
           </div>
 
-          {!canMarkReady && (
+          {/* QR Code Upload Section */}
+          {!hasCompletionPhoto && uploadUrl && (
+            <div className="mb-4 p-4 bg-white border-2 border-blue-300 rounded-lg">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 mb-1">Upload Completion Photo</h3>
+                  <p className="text-sm text-gray-600">
+                    Scan this QR code with your phone to upload a photo of the finished racket
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col items-center">
+                <QRCodeSVG value={uploadUrl} size={200} level="H" />
+                <p className="text-xs text-gray-500 mt-3 text-center">
+                  Open your phone's camera app and scan this code
+                </p>
+                {uploadUrl.includes('localhost') && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded w-full">
+                    <p className="text-xs text-yellow-800 text-center">
+                      ⚠️ Using localhost - won't work on phone. Add NEXT_PUBLIC_APP_URL to .env.local with your network IP (e.g., http://192.168.1.100:3000) or use ngrok.
+                    </p>
+                  </div>
+                )}
+                <div className="mt-3 pt-3 border-t border-gray-200 w-full">
+                  <p className="text-xs text-gray-600 text-center mb-2">
+                    Or manually type this link on your phone:
+                  </p>
+                  <input
+                    type="text"
+                    value={uploadUrl}
+                    readOnly
+                    className="w-full px-2 py-1 text-xs bg-gray-50 border rounded text-center font-mono"
+                    onClick={(e) => e.currentTarget.select()}
+                  />
+                </div>
+              </div>
+
+              {completionPhotoTask?.photo_url && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <Check className="w-4 h-4" />
+                    <span className="text-sm font-medium">Photo uploaded successfully!</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!canMarkReady && !hasCompletionPhoto && (
             <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-yellow-800">
                 <p className="font-medium">Almost done!</p>
-                <p>Please upload a completion photo to mark this job ready for pickup.</p>
+                <p>Please upload a completion photo using the QR code above to mark this job ready for pickup.</p>
+              </div>
+            </div>
+          )}
+
+          {hasCompletionPhoto && completionPhotoTask?.photo_url && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-green-800">Completion photo uploaded!</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleRemovePhoto}
+                      disabled={uploadingPhoto}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {uploadingPhoto ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <X className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <div className="overflow-x-auto mb-3">
+                    <img
+                      src={completionPhotoTask.photo_url}
+                      alt="Completion"
+                      className="w-full max-h-64 object-contain rounded-lg bg-white cursor-pointer border border-green-200"
+                      onClick={() => completionPhotoTask.photo_url && window.open(completionPhotoTask.photo_url, '_blank')}
+                    />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    id="change-photo-upload"
+                  />
+                  <label htmlFor="change-photo-upload">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      disabled={uploadingPhoto}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        document.getElementById('change-photo-upload')?.click()
+                      }}
+                    >
+                      {uploadingPhoto ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4 mr-2" />
+                          Change Photo
+                        </>
+                      )}
+                    </Button>
+                  </label>
+                </div>
               </div>
             </div>
           )}

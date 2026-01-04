@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSearchLocation } from '@/lib/contexts/search-location-context'
-import type { StringerSearchResult } from '@stringr/types'
+import { formatDistance } from '@stringerly/ui'
+import type { StringerSearchResult } from '@stringerly/types'
 
 interface SearchDropdownProps {
   onClose: () => void
@@ -29,11 +30,6 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 
 function toRadians(degrees: number): number {
   return degrees * (Math.PI / 180)
-}
-
-function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)}m`
-  return `${km.toFixed(1)}km`
 }
 
 

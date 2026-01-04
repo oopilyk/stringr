@@ -548,11 +548,13 @@ export type Database = {
           onboarding_step: number | null
           pricing_notes: string | null
           rush_fee_cents: number
+          rush_turnaround_hours: number | null
           services: Json | null
           string_inventory: Json | null
           supported_racket_types: string[] | null
           suspended: boolean | null
           suspension_reason: string | null
+          total_earnings_cents: number
           turnaround_hours: number
           updated_at: string | null
           verification_documents: Json | null
@@ -580,11 +582,13 @@ export type Database = {
           onboarding_step?: number | null
           pricing_notes?: string | null
           rush_fee_cents?: number
+          rush_turnaround_hours?: number | null
           services?: Json | null
           string_inventory?: Json | null
           supported_racket_types?: string[] | null
           suspended?: boolean | null
           suspension_reason?: string | null
+          total_earnings_cents?: number
           turnaround_hours?: number
           updated_at?: string | null
           verification_documents?: Json | null
@@ -612,11 +616,13 @@ export type Database = {
           onboarding_step?: number | null
           pricing_notes?: string | null
           rush_fee_cents?: number
+          rush_turnaround_hours?: number | null
           services?: Json | null
           string_inventory?: Json | null
           supported_racket_types?: string[] | null
           suspended?: boolean | null
           suspension_reason?: string | null
+          total_earnings_cents?: number
           turnaround_hours?: number
           updated_at?: string | null
           verification_documents?: Json | null
@@ -745,6 +751,10 @@ export type Database = {
       get_or_create_conversation: {
         Args: { user_one_id: string; user_two_id: string }
         Returns: string
+      }
+      increment_stringer_earnings: {
+        Args: { p_amount_cents: number; p_stringer_id: string }
+        Returns: undefined
       }
       initialize_stringing_tasks: {
         Args: { p_request_id: string }

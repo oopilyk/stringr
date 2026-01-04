@@ -94,20 +94,21 @@ export async function POST(
 
       // Try inserting tasks directly
       for (let i = 0; i < taskTypes.length; i++) {
-        await supabase
-          .from('stringing_tasks')
-          .insert({
-            request_id: params.id,
-            task_type: taskTypes[i],
-            status: 'pending',
-            task_order: i + 1,
-            is_required: !['inspect_frame', 'completion_photo'].includes(taskTypes[i])
-          })
-          .select()
-          .single()
+        try {
+          await supabase
+            .from('stringing_tasks')
+            .insert({
+              request_id: params.id,
+              task_type: taskTypes[i],
+              status: 'pending',
+              task_order: i + 1,
+              is_required: !['inspect_frame', 'completion_photo'].includes(taskTypes[i])
+            })
+            .select()
+            .single()
+        } catch (error) {
           // Ignore errors - tasks might already exist
-          .then(() => {})
-          .catch(() => {})
+        }
       }
     }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
-import { StringerOnboardingData } from '@stringr/types'
+import { StringerOnboardingData } from '@stringerly/types'
 import { PricingPreview } from './pricing-preview'
 import { useState, useEffect } from 'react'
 
@@ -32,9 +32,16 @@ export function Step4Pricing({ register, errors, setValue, watch }: Step4Pricing
   }
 
   const handleInputChange = (value: string) => {
+    // Allow empty input for easier editing
+    if (value === '') {
+      setBasePriceDollars('')
+      return
+    }
     setBasePriceDollars(value)
-    const cents = Math.round(parseFloat(value || '0') * 100)
-    setValue('base_price_cents', cents)
+    const cents = Math.round(parseFloat(value) * 100)
+    if (!isNaN(cents)) {
+      setValue('base_price_cents', cents)
+    }
   }
 
   return (
@@ -59,24 +66,29 @@ export function Step4Pricing({ register, errors, setValue, watch }: Step4Pricing
             <span>$10</span>
             <span>$100</span>
           </div>
-          <input
-            id="base_price_input"
-            type="number"
-            step="0.50"
-            value={basePriceDollars}
-            onChange={(e) => handleInputChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-            placeholder="25.00"
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+            <input
+              id="base_price_input"
+              type="number"
+              step="any"
+              min="10"
+              max="100"
+              value={basePriceDollars}
+              onChange={(e) => handleInputChange(e.target.value)}
+              className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+              placeholder="25.00"
+            />
+          </div>
         </div>
         {errors.base_price_cents && <p className="mt-1 text-sm text-red-600">{errors.base_price_cents.message}</p>}
-        <p className="mt-1 text-xs text-gray-500">Labor only. String costs are typically added separately.</p>
+        <p className="mt-1 text-xs text-gray-500"><span className="font-bold">Labor only.</span> String costs are added separately.</p>
       </div>
 
       {/* Turnaround Time */}
       <div>
         <label htmlFor="turnaround_hours" className="block text-sm font-medium text-gray-700 mb-1">
-          Typical Turnaround Time *
+          Predicted Turnaround Time (without rush) *
         </label>
         <select
           id="turnaround_hours"
@@ -110,23 +122,54 @@ export function Step4Pricing({ register, errors, setValue, watch }: Step4Pricing
 
       {/* Rush Fee */}
       {acceptsRush && (
-        <div>
-          <label htmlFor="rush_fee_cents" className="block text-sm font-medium text-gray-700 mb-1">
-            Rush Fee
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-            <input
-              id="rush_fee_cents"
-              type="number"
-              step="0.50"
-              value={(rushFee / 100).toFixed(2)}
-              onChange={(e) => setValue('rush_fee_cents', Math.round(parseFloat(e.target.value || '0') * 100))}
-              className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-              placeholder="5.00"
-            />
+        <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div>
+            <label htmlFor="rush_fee_cents" className="block text-sm font-medium text-gray-700 mb-1">
+              Rush Fee Amount *
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+              <input
+                id="rush_fee_cents"
+                type="number"
+                step="any"
+                min="0"
+                value={(rushFee / 100).toFixed(2)}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '') return
+                  const cents = Math.round(parseFloat(value) * 100)
+                  if (!isNaN(cents)) {
+                    setValue('rush_fee_cents', cents)
+                  }
+                }}
+                className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                placeholder="5.00"
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Additional fee for rush service</p>
           </div>
-          <p className="mt-1 text-xs text-gray-500">Additional fee for rush service</p>
+
+          <div>
+            <label htmlFor="rush_turnaround_hours" className="block text-sm font-medium text-gray-700 mb-1">
+              Rush Time Threshold *
+            </label>
+            <select
+              id="rush_turnaround_hours"
+              {...register('rush_turnaround_hours', { valueAsNumber: true })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+            >
+              <option value="">Select...</option>
+              <option value="3">3 hours</option>
+              <option value="6">6 hours</option>
+              <option value="12">12 hours (same day)</option>
+              <option value="24">24 hours (next day)</option>
+              <option value="48">48 hours (2 days)</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Rush fee applies when completion is requested within this timeframe
+            </p>
+          </div>
         </div>
       )}
 

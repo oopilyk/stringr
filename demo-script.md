@@ -1,10 +1,10 @@
-# Stringr Demo Script (3 minutes)
+# Stringerly Demo Script (3 minutes)
 
 ## Demo Flow: Complete User Journey
 
 ### Setup (30 seconds)
 1. **Open browser to localhost:3000**
-2. **Show landing page** - "Stringr - Tennis Racquet Stringing Marketplace"
+2. **Show landing page** - "Stringerly - Tennis Racquet Stringing Marketplace"
 3. **Click demo sign in** - Show test accounts available
 
 ---
@@ -116,8 +116,8 @@
 
 ## Demo Talking Points
 
-### "Why Stringr?"
-> *"Tennis players often struggle to find reliable, nearby stringers. Traditional pro shops have limited hours and high prices. Stringr creates a marketplace connecting players with local home stringers who can offer competitive prices and faster turnaround."*
+### "Why Stringerly?"
+> *"Tennis players often struggle to find reliable, nearby stringers. Traditional pro shops have limited hours and high prices. Stringerly creates a marketplace connecting players with local home stringers who can offer competitive prices and faster turnaround."*
 
 ### "The Technology"
 > *"Built with modern web technologies - Next.js frontend, Supabase backend, and designed for both web and mobile. The monorepo structure allows us to share components and business logic across platforms."*

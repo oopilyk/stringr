@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { AvailabilityBlock } from '@stringr/types'
-import { Button, Card } from '@stringr/ui'
+import { AvailabilityBlock } from '@stringerly/types'
+import { Button, Card } from '@stringerly/ui'
 import { Plus, Trash2 } from 'lucide-react'
 
 interface AvailabilitySchedulerProps {
@@ -18,8 +18,8 @@ export function AvailabilityScheduler({ availability, onChange }: AvailabilitySc
   const addTimeBlock = (dow: number) => {
     const newBlock: AvailabilityBlock = {
       dow,
-      start: '09:00',
-      end: '17:00',
+      start: '09:00', // 9:00 AM
+      end: '17:00', // 5:00 PM
     }
     onChange([...availability, newBlock])
   }

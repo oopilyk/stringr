@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { Check, Clock, Package, Loader2, MessageSquare, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 

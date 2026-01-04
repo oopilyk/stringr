@@ -10,11 +10,11 @@ import {
   CardTitle,
   CardDescription,
   Button,
-} from '@stringr/ui'
+} from '@stringerly/ui'
 import { Save, CreditCard, Lock, User } from 'lucide-react'
 
 export default function SettingsPage() {
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
   const [message] = useState('')
 
   return (
@@ -56,7 +56,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="email"
-                value={profile?.email || ''}
+                value={user?.email || ''}
                 disabled
                 className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-700"
               />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { Check, Circle, Loader2, Camera, AlertCircle, Clock } from 'lucide-react'
 
 interface StringingTask {

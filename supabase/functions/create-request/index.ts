@@ -106,6 +106,7 @@ serve(async (req) => {
       .insert({
         player_id: user.id,
         stringer_id: payload.stringer_id,
+        service_type: 'restring', // MVP: Only support pure restringing
         racquet_brand: payload.racquet_brand,
         racquet_model: payload.racquet_model,
         string_pref: payload.string_pref,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { X, Calendar, AlertTriangle, Package } from 'lucide-react'
 
 interface AcceptJobModalProps {

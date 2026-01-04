@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringr/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@stringerly/ui'
 import { useForm } from 'react-hook-form'
 import { UserCheck, UserPlus, Users, Zap } from 'lucide-react'
 
@@ -102,7 +102,7 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl w-full space-y-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-primary">Join Stringr</h1>
+            <h1 className="text-3xl font-bold text-primary">Join Stringerly</h1>
             <p className="mt-2 text-sm text-gray-600">
               Choose how you'd like to use our tennis stringing marketplace
             </p>

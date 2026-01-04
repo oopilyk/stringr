@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@stringr/ui'
+import { Button } from '@stringerly/ui'
 import { Edit2, Check, X } from 'lucide-react'
+import { formatPhoneNumber, formatEmail, formatCityName, formatFullName } from '@/lib/utils/input-formatters'
 
 interface InlineEditFieldProps {
   label: string
@@ -11,6 +12,7 @@ interface InlineEditFieldProps {
   type?: 'text' | 'textarea' | 'tel' | 'email'
   onSave: (fieldName: string, value: string) => Promise<void>
   placeholder?: string
+  maxLength?: number
 }
 
 export function InlineEditField({
@@ -19,12 +21,30 @@ export function InlineEditField({
   fieldName,
   type = 'text',
   onSave,
-  placeholder
+  placeholder,
+  maxLength
 }: InlineEditFieldProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const handleInputChange = (newValue: string) => {
+    // Apply formatting based on field type and name
+    let formatted = newValue
+
+    if (type === 'tel' || fieldName === 'phone') {
+      formatted = formatPhoneNumber(newValue)
+    } else if (type === 'email') {
+      formatted = formatEmail(newValue)
+    } else if (fieldName === 'city') {
+      formatted = formatCityName(newValue)
+    } else if (fieldName === 'full_name') {
+      formatted = formatFullName(newValue)
+    }
+
+    setEditValue(formatted)
+  }
 
   const handleSave = async () => {
     if (editValue === value) {
@@ -82,9 +102,10 @@ export function InlineEditField({
       {type === 'textarea' ? (
         <textarea
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder={placeholder}
           rows={3}
+          maxLength={maxLength || 1000}
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
           disabled={isSaving}
         />
@@ -92,11 +113,15 @@ export function InlineEditField({
         <input
           type={type}
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder={placeholder}
+          maxLength={maxLength || (type === 'tel' ? 14 : 100)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
           disabled={isSaving}
         />
+      )}
+      {maxLength && type === 'textarea' && (
+        <p className="text-xs text-gray-500 mt-1">{editValue.length} / {maxLength}</p>
       )}
       <div className="flex gap-2 mt-2">
         <Button
