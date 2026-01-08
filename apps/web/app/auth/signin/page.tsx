@@ -100,7 +100,7 @@ export default function SignInPage() {
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center space-x-3">
             <img
-              src="/logo.jpg"
+              src="/racket-logo.png"
               alt="Stringerly Logo"
               width={48}
               height={48}

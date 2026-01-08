@@ -114,7 +114,7 @@ export default function LoginPage() {
       <nav className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="flex items-center space-x-3">
           <img
-            src="/logo.jpg"
+            src="/racket-logo.png"
             alt="Stringerly Logo"
             width={48}
             height={48}

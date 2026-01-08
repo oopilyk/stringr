@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { capturePayment } from '@/lib/stripe/server'
 
 // POST /api/requests/[id]/complete - Player confirms pickup and completes request
 export async function POST(
@@ -32,7 +33,7 @@ export async function POST(
     // Verify user is the player and get request details
     const { data: req, error: reqError } = await supabase
       .from('requests')
-      .select('player_id, stringer_id, status, final_price_cents, tip_cents')
+      .select('player_id, stringer_id, status, final_price_cents, tip_cents, payment_intent_id, payment_captured_at')
       .eq('id', params.id)
       .single()
 
@@ -58,13 +59,29 @@ export async function POST(
       return NextResponse.json({ error: 'Request must be ready for pickup', currentStatus: req.status }, { status: 400 })
     }
 
+    // Capture payment if there's a payment intent and it hasn't been captured yet
+    if (req.payment_intent_id && !req.payment_captured_at) {
+      try {
+        console.log('Capturing payment:', req.payment_intent_id)
+        await capturePayment(req.payment_intent_id)
+        console.log('Payment captured successfully')
+      } catch (paymentError: any) {
+        console.error('Error capturing payment:', paymentError)
+        return NextResponse.json({
+          error: 'Failed to capture payment',
+          details: paymentError.message
+        }, { status: 500 })
+      }
+    }
+
     // Update request to completed using admin client to bypass RLS
     const now = new Date().toISOString()
     const { error: updateError } = await supabaseAdmin
       .from('requests')
       .update({
         status: 'completed',
-        completed_at: now
+        completed_at: now,
+        payment_captured_at: req.payment_intent_id && !req.payment_captured_at ? now : req.payment_captured_at
       })
       .eq('id', params.id)
 

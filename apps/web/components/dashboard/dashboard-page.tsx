@@ -641,7 +641,19 @@ export function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t">
+                  <div className="mt-4 pt-4 border-t space-y-2">
+                    {request.payment_intent_id && (
+                      <Link href={`/request/${request.id}/payment`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        >
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          View Payment
+                        </Button>
+                      </Link>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"

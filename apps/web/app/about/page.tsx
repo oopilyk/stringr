@@ -13,7 +13,7 @@ export default function AboutPage() {
       <nav className="relative z-50 flex items-center justify-between px-8 py-4 bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="flex items-center space-x-3">
           <img
-            src="/logo.jpg"
+            src="/racket-logo.png"
             alt="Stringerly Logo"
             width={48}
             height={48}

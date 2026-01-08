@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
+import { ConnectOnboarding } from '@/components/stripe/connect-onboarding'
 import {
   Card,
   CardContent,
@@ -12,10 +13,29 @@ import {
   Button,
 } from '@stringerly/ui'
 import { Save, CreditCard, Lock, User } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
 
 export default function SettingsPage() {
   const { user, profile } = useAuth()
   const [message] = useState('')
+  const [isStringer, setIsStringer] = useState(false)
+
+  useEffect(() => {
+    const checkIfStringer = async () => {
+      if (!user) return
+
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('stringer_settings')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      setIsStringer(!!data)
+    }
+
+    checkIfStringer()
+  }, [user])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,10 +190,20 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Stripe Connect - Only for Stringers */}
+        {isStringer && user && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Payment Settings</h2>
+            <ConnectOnboarding userId={user.id} />
+          </div>
+        )}
+
         {/* Demo note */}
-        <p className="text-center text-gray-400 text-sm mt-12 italic">
-          This is a demo settings page — functionality coming soon.
-        </p>
+        {!isStringer && (
+          <p className="text-center text-gray-400 text-sm mt-12 italic">
+            This is a demo settings page — functionality coming soon.
+          </p>
+        )}
       </main>
     </div>
   )

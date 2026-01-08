@@ -348,6 +348,10 @@ export type Database = {
           is_rush: boolean | null
           pause_reason: string | null
           paused_at: string | null
+          payment_authorized_at: string | null
+          payment_captured_at: string | null
+          payment_intent_id: string | null
+          platform_fee_cents: number | null
           player_id: string
           preferred_completion_date: string | null
           preferred_time_slot: Json | null
@@ -363,6 +367,7 @@ export type Database = {
           string_issue_notes: string | null
           string_pattern: string
           string_selection: Json
+          stringer_earnings_cents: number | null
           stringer_id: string
           tension_crosses_lbs: number
           tension_mains_lbs: number
@@ -398,6 +403,10 @@ export type Database = {
           is_rush?: boolean | null
           pause_reason?: string | null
           paused_at?: string | null
+          payment_authorized_at?: string | null
+          payment_captured_at?: string | null
+          payment_intent_id?: string | null
+          platform_fee_cents?: number | null
           player_id: string
           preferred_completion_date?: string | null
           preferred_time_slot?: Json | null
@@ -413,6 +422,7 @@ export type Database = {
           string_issue_notes?: string | null
           string_pattern: string
           string_selection: Json
+          stringer_earnings_cents?: number | null
           stringer_id: string
           tension_crosses_lbs: number
           tension_mains_lbs: number
@@ -448,6 +458,10 @@ export type Database = {
           is_rush?: boolean | null
           pause_reason?: string | null
           paused_at?: string | null
+          payment_authorized_at?: string | null
+          payment_captured_at?: string | null
+          payment_intent_id?: string | null
+          platform_fee_cents?: number | null
           player_id?: string
           preferred_completion_date?: string | null
           preferred_time_slot?: Json | null
@@ -463,6 +477,7 @@ export type Database = {
           string_issue_notes?: string | null
           string_pattern?: string
           string_selection?: Json
+          stringer_earnings_cents?: number | null
           stringer_id?: string
           tension_crosses_lbs?: number
           tension_mains_lbs?: number
@@ -551,6 +566,10 @@ export type Database = {
           rush_turnaround_hours: number | null
           services: Json | null
           string_inventory: Json | null
+          stripe_account_id: string | null
+          stripe_charges_enabled: boolean | null
+          stripe_onboarding_completed: boolean | null
+          stripe_payouts_enabled: boolean | null
           supported_racket_types: string[] | null
           suspended: boolean | null
           suspension_reason: string | null
@@ -585,6 +604,10 @@ export type Database = {
           rush_turnaround_hours?: number | null
           services?: Json | null
           string_inventory?: Json | null
+          stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean | null
+          stripe_onboarding_completed?: boolean | null
+          stripe_payouts_enabled?: boolean | null
           supported_racket_types?: string[] | null
           suspended?: boolean | null
           suspension_reason?: string | null
@@ -619,6 +642,10 @@ export type Database = {
           rush_turnaround_hours?: number | null
           services?: Json | null
           string_inventory?: Json | null
+          stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean | null
+          stripe_onboarding_completed?: boolean | null
+          stripe_payouts_enabled?: boolean | null
           supported_racket_types?: string[] | null
           suspended?: boolean | null
           suspension_reason?: string | null

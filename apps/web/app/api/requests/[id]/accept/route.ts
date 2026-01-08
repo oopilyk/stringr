@@ -24,7 +24,8 @@ export async function POST(
       confirmed_tension_mains_lbs,
       confirmed_tension_crosses_lbs,
       string_issue_notes,
-      racket_count
+      racket_count,
+      final_price_cents
     } = await request.json()
 
     // Validate request exists, is pending, and user is the assigned stringer
@@ -51,7 +52,14 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid state transition' }, { status: 400 })
     }
 
-    // Update request status to accepted with confirmed details
+    // Validate final price
+    if (!final_price_cents || final_price_cents <= 0) {
+      return NextResponse.json({ error: 'Final price is required' }, { status: 400 })
+    }
+
+    // Update request status to accepted with confirmed details and final price
+    // NOTE: Status stays as 'accepted' until player authorizes payment
+    // Payment authorization will transition to 'in_progress'
     const { error: updateError } = await supabase
       .from('requests')
       .update({
@@ -63,7 +71,8 @@ export async function POST(
         confirmed_tension_mains_lbs: confirmed_tension_mains_lbs || req.tension_mains_lbs,
         confirmed_tension_crosses_lbs: confirmed_tension_crosses_lbs || req.tension_crosses_lbs,
         string_issue_notes: string_issue_notes || null,
-        racket_count: racket_count || 1
+        racket_count: racket_count || 1,
+        final_price_cents: final_price_cents
       })
       .eq('id', params.id)
 
@@ -72,45 +81,8 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to accept request' }, { status: 500 })
     }
 
-    // Initialize stringing tasks
-    const { error: tasksError } = await supabase
-      .rpc('initialize_stringing_tasks', { p_request_id: params.id })
-
-    if (tasksError) {
-      console.error('Error initializing tasks:', tasksError)
-      // Don't fail the whole request - tasks might already exist
-      // We'll try to create them manually as fallback
-      const taskTypes = [
-        'receive_racket',
-        'remove_strings',
-        'inspect_frame',
-        'mount_racket',
-        'string_mains',
-        'string_crosses',
-        'tie_off',
-        'final_inspection',
-        'completion_photo'
-      ]
-
-      // Try inserting tasks directly
-      for (let i = 0; i < taskTypes.length; i++) {
-        try {
-          await supabase
-            .from('stringing_tasks')
-            .insert({
-              request_id: params.id,
-              task_type: taskTypes[i],
-              status: 'pending',
-              task_order: i + 1,
-              is_required: !['inspect_frame', 'completion_photo'].includes(taskTypes[i])
-            })
-            .select()
-            .single()
-        } catch (error) {
-          // Ignore errors - tasks might already exist
-        }
-      }
-    }
+    // DO NOT initialize tasks yet - wait for payment authorization
+    // Tasks will be created when payment is authorized in /authorize-payment endpoint
 
     // Create state change audit log
     await supabase

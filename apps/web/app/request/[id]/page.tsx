@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { StringingProgressPanel } from '@/components/requests/stringing-progress-panel'
 import { PlayerRequestStatus } from '@/components/requests/player-request-status'
 import { AcceptJobModal } from '@/components/requests/accept-job-modal'
+import { AuthorizePaymentModal } from '@/components/requests/authorize-payment-modal'
 import { RequestStatus } from '@stringerly/types'
 
 interface Request {
@@ -52,6 +53,8 @@ interface Request {
   ready_at: string | null
   accepted_at: string | null
   completion_notes: string | null
+  payment_intent_id?: string | null
+  payment_authorized_at?: string | null
   player?: {
     full_name: string
     avatar_url?: string
@@ -86,6 +89,7 @@ export default function RequestDetailsPage() {
   const [error, setError] = useState('')
   const [isAccepting, setIsAccepting] = useState(false)
   const [showAcceptModal, setShowAcceptModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -202,7 +206,7 @@ export default function RequestDetailsPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/dashboard')}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
         >
           <ChevronLeft className="w-5 h-5 mr-1" />
@@ -421,6 +425,58 @@ export default function RequestDetailsPage() {
               </div>
             )}
 
+            {/* Payment Authorization Needed - Show for players when quote is sent but payment not authorized */}
+            {isPlayer && request.status === ('accepted' as RequestStatus) && request.final_price_cents && !request.payment_intent_id && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 border-2 border-blue-300">
+                <div className="flex items-center space-x-2 mb-3">
+                  <DollarSign className="w-6 h-6 text-blue-600" />
+                  <h2 className="text-lg font-bold text-gray-900">Payment Authorization Required</h2>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    {request.stringer?.full_name} has accepted your request with a quote of:
+                  </p>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {formatPrice(request.final_price_cents)}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Your payment will be held securely until you approve the completed work.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Authorize Payment
+                </Button>
+              </div>
+            )}
+
+            {/* Payment Details Link - Show when payment has been authorized */}
+            {request.payment_intent_id && (
+              <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Payment Information</h3>
+                    <p className="text-sm text-gray-600">
+                      {request.payment_captured_at
+                        ? 'Payment completed - View transaction details'
+                        : 'Payment authorized - Held in escrow until job completion'}
+                    </p>
+                  </div>
+                  <Link href={`/request/${params.id}/payment`}>
+                    <Button variant="outline" size="sm">
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      View Details
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {/* Dropoff Details */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Dropoff Details</h2>
@@ -522,10 +578,34 @@ export default function RequestDetailsPage() {
       {/* Accept Job Modal */}
       {showAcceptModal && request && (
         <AcceptJobModal
-          request={request}
+          request={{
+            id: request.id,
+            string_selection: request.string_selection,
+            tension_mains_lbs: request.tension_mains_lbs,
+            tension_crosses_lbs: request.tension_crosses_lbs,
+            estimated_price_cents: request.estimated_price_cents
+          }}
           onAccept={handleAccept}
           onCancel={() => setShowAcceptModal(false)}
           isAccepting={isAccepting}
+        />
+      )}
+
+      {/* Payment Authorization Modal */}
+      {showPaymentModal && request && request.final_price_cents && request.stringer && (
+        <AuthorizePaymentModal
+          request={{
+            id: request.id,
+            final_price_cents: request.final_price_cents,
+            stringer: {
+              full_name: request.stringer.full_name
+            }
+          }}
+          onSuccess={() => {
+            setShowPaymentModal(false)
+            window.location.reload() // Reload to show updated payment status
+          }}
+          onCancel={() => setShowPaymentModal(false)}
         />
       )}
     </div>

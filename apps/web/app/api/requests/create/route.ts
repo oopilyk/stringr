@@ -74,11 +74,14 @@ export async function POST(request: Request) {
     }
 
     // SECURITY: Verify dropoff method exists in stringer's options
+    // MVP: Accept default "Drop-off" method even if not explicitly configured
     const dropoffExists = stringerSettings.dropoff_methods?.some(
       (d: any) => d.method === data.dropoff_method.method
     )
 
-    if (!dropoffExists) {
+    const isDefaultDropoff = data.dropoff_method.method === 'Drop-off'
+
+    if (!dropoffExists && !isDefaultDropoff) {
       return NextResponse.json(
         { error: 'Selected dropoff method is not available' },
         { status: 400 }

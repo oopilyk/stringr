@@ -134,6 +134,64 @@ export function PlayerActiveRequestCard({ request, stringer }: PlayerActiveReque
   const completionPhotoTask = tasks.find(t => t.task_type === 'completion_photo')
   const completionPhotoUrl = completionPhotoTask?.photo_url || request.completion_photo_url
 
+  // Payment authorization needed view (accepted status)
+  if (request.status === 'accepted') {
+    return (
+      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl shadow-lg border-2 border-yellow-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-yellow-600 to-amber-600 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <Package className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Quote Received!</h2>
+              <p className="text-yellow-100 text-sm">Payment Authorization Required</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <img
+              src={stringer.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=stringer'}
+              alt={stringer.full_name}
+              className="w-16 h-16 rounded-full object-cover border-2 border-yellow-300"
+            />
+            <div>
+              <p className="text-sm text-gray-600">Quote from</p>
+              <p className="font-bold text-gray-900 text-lg">{stringer.full_name}</p>
+            </div>
+          </div>
+
+          <div className="mb-6 p-4 bg-white rounded-lg border-2 border-yellow-300">
+            <p className="text-sm text-gray-600 mb-2">Your stringer has accepted your request with a final quote of:</p>
+            <div className="text-3xl font-bold text-yellow-600 mb-2">
+              {formatPrice(request.estimated_price_cents)}
+            </div>
+            <p className="text-xs text-gray-600">
+              ⚡ Work will begin as soon as you authorize payment
+            </p>
+          </div>
+
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-medium text-blue-900 mb-1">💳 Secure Escrow Payment</p>
+            <p className="text-xs text-blue-700">
+              Your payment will be held securely and only released to the stringer after you confirm the completed work. You're protected by Stripe.
+            </p>
+          </div>
+
+          <Button
+            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+            onClick={() => router.push(`/request/${request.id}`)}
+          >
+            <Check className="w-4 h-4 mr-2" />
+            View Quote & Authorize Payment
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   // Ready for pickup view
   if (request.status === 'ready_for_pickup') {
     return (

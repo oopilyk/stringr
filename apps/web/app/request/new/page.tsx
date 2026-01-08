@@ -110,9 +110,13 @@ function NewRequestForm() {
         setSelectedString(settingsData.string_inventory[0])
       }
 
-      // Set default dropoff if available
+      // MVP: Auto-select the first (and only) dropoff method
+      // For MVP, we only support drop-off, so always auto-select it
       if (settingsData.dropoff_methods?.length > 0) {
         setSelectedDropoff(settingsData.dropoff_methods[0])
+      } else {
+        // If stringer hasn't configured dropoff methods, default to drop-off
+        setSelectedDropoff({ method: 'Drop-off', details: '' })
       }
     } catch (err) {
       console.error('Error loading stringer data:', err)
@@ -182,10 +186,11 @@ function NewRequestForm() {
       return
     }
 
-    if (!selectedDropoff) {
-      setError('Please select a dropoff method')
-      return
-    }
+    // MVP: Dropoff method is auto-selected, so no need to validate
+    // if (!selectedDropoff) {
+    //   setError('Please select a dropoff method')
+    //   return
+    // }
 
     if (tensionMains > (stringerSettings?.max_tension || 90) ||
         tensionCrosses > (stringerSettings?.max_tension || 90)) {
@@ -544,11 +549,32 @@ function NewRequestForm() {
             )}
           </div>
 
-          {/* Dropoff Instructions */}
-          {stringerSettings?.dropoff_methods?.[0]?.details && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Drop-off Instructions</h3>
-              <p className="text-sm text-gray-700">{stringerSettings.dropoff_methods[0].details}</p>
+          {/* Dropoff Method */}
+          {stringerSettings?.dropoff_methods && stringerSettings.dropoff_methods.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Drop-off Method <span className="text-red-500">*</span>
+              </label>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="radio"
+                    checked={true}
+                    readOnly
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {stringerSettings.dropoff_methods[0].method}
+                    </p>
+                    {stringerSettings.dropoff_methods[0].details && (
+                      <p className="text-sm text-gray-700 mt-1">
+                        {stringerSettings.dropoff_methods[0].details}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

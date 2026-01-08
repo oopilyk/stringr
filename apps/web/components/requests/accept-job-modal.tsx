@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@stringerly/ui'
-import { X, Calendar, AlertTriangle, Package } from 'lucide-react'
+import { Button, formatPrice } from '@stringerly/ui'
+import { X, Calendar, AlertTriangle, Package, DollarSign } from 'lucide-react'
 
 interface AcceptJobModalProps {
   request: {
@@ -14,6 +14,7 @@ interface AcceptJobModalProps {
     }
     tension_mains_lbs: number
     tension_crosses_lbs: number
+    estimated_price_cents: number
   }
   onAccept: (data: {
     confirmed_string_brand: string
@@ -23,6 +24,7 @@ interface AcceptJobModalProps {
     estimated_completion: string | null
     string_issue_notes?: string
     racket_count: number
+    final_price_cents: number
   }) => Promise<void>
   onCancel: () => void
   isAccepting: boolean
@@ -37,6 +39,7 @@ export function AcceptJobModal({ request, onAccept, onCancel, isAccepting }: Acc
   const [stringIssue, setStringIssue] = useState(false)
   const [stringIssueNotes, setStringIssueNotes] = useState('')
   const [racketCount, setRacketCount] = useState(1)
+  const [finalPrice, setFinalPrice] = useState((request.estimated_price_cents / 100).toFixed(2))
 
   const hasChanges =
     confirmedStringBrand !== request.string_selection.brand ||
@@ -56,7 +59,8 @@ export function AcceptJobModal({ request, onAccept, onCancel, isAccepting }: Acc
       confirmed_tension_crosses_lbs: confirmedTensionCrosses,
       estimated_completion: estimatedCompletion,
       string_issue_notes: stringIssue ? stringIssueNotes : undefined,
-      racket_count: racketCount
+      racket_count: racketCount,
+      final_price_cents: Math.round(parseFloat(finalPrice) * 100)
     })
   }
 
@@ -65,7 +69,7 @@ export function AcceptJobModal({ request, onAccept, onCancel, isAccepting }: Acc
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">Accept Job & Confirm Details</h2>
+          <h2 className="text-xl font-bold text-white">Accept Job & Send Quote</h2>
           <button
             onClick={onCancel}
             className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
@@ -84,7 +88,13 @@ export function AcceptJobModal({ request, onAccept, onCancel, isAccepting }: Acc
             </label>
             <select
               value={racketCount}
-              onChange={(e) => setRacketCount(parseInt(e.target.value))}
+              onChange={(e) => {
+                const count = parseInt(e.target.value)
+                setRacketCount(count)
+                // Auto-update price based on racket count
+                const perRacketPrice = request.estimated_price_cents / 100
+                setFinalPrice((perRacketPrice * count).toFixed(2))
+              }}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               disabled={isAccepting}
             >
@@ -94,6 +104,33 @@ export function AcceptJobModal({ request, onAccept, onCancel, isAccepting }: Acc
             </select>
             <p className="text-xs text-gray-500 mt-1">
               How many rackets will you be stringing for this request?
+            </p>
+          </div>
+
+          {/* Final Price Quote */}
+          <div className="border-2 border-green-200 rounded-lg p-4 bg-gradient-to-br from-green-50 to-emerald-50">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+              <DollarSign className="w-4 h-4" />
+              Your Quote (Total Price) <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">$</span>
+              <input
+                type="number"
+                value={finalPrice}
+                onChange={(e) => setFinalPrice(e.target.value)}
+                step="0.01"
+                min="1"
+                className="w-full pl-8 pr-3 py-3 border-2 border-green-300 rounded-lg text-lg font-bold focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                disabled={isAccepting}
+                required
+              />
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              Player's estimated price: <span className="font-semibold">{formatPrice(request.estimated_price_cents * racketCount)}</span>
+            </p>
+            <p className="text-xs text-green-700 mt-1">
+              This is the price the player will pay. Make sure it covers all {racketCount} racket{racketCount > 1 ? 's' : ''}.
             </p>
           </div>
 
@@ -245,10 +282,10 @@ export function AcceptJobModal({ request, onAccept, onCancel, isAccepting }: Acc
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isAccepting || (stringIssue && !stringIssueNotes.trim())}
+            disabled={isAccepting || (stringIssue && !stringIssueNotes.trim()) || !finalPrice || parseFloat(finalPrice) <= 0}
             className="flex-1 bg-green-600 hover:bg-green-700 text-white"
           >
-            {isAccepting ? 'Accepting...' : 'Accept Job & Start'}
+            {isAccepting ? 'Sending Quote...' : 'Send Quote to Player'}
           </Button>
         </div>
       </div>

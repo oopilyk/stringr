@@ -89,7 +89,7 @@ export function Navigation() {
           {/* Logo */}
           <Link href={profile ? "/discover" : "/"} className="flex items-center space-x-3 flex-shrink-0">
             <img
-              src="/logo.jpg"
+              src="/racket-logo.png"
               alt="Stringerly Logo"
               width={48}
               height={48}
