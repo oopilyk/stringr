@@ -1,110 +1,157 @@
+/**
+ * Payment Authorization Endpoint
+ *
+ * Security Features:
+ * - Rate limiting: 5 requests per minute (prevents payment spam)
+ * - Input validation: Zod schema validation
+ * - Authentication: Supabase auth required
+ * - Authorization: Player-only access verification
+ * - Idempotency: Prevents duplicate payment authorization
+ * - Error handling: Non-leaky error messages
+ *
+ * OWASP Protections:
+ * - API4:2023 Unrestricted Resource Consumption (rate limiting)
+ * - API8:2023 Security Misconfiguration (strict validation)
+ * - API1:2023 Broken Object Level Authorization (owner check)
+ */
+
 import { createServerClient } from '@/lib/supabase-server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { authorizePayment } from '@/lib/stripe/server'
+import { withRateLimit, RATE_LIMITS } from '@/lib/security/rate-limit'
+import { validateData, AuthorizePaymentSchema, RequestIdParamSchema } from '@/lib/validation/schemas'
 
 // POST /api/requests/[id]/authorize-payment - Player authorizes payment for accepted quote
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const supabase = createServerClient()
 
-    // Get current user
+    // 1. AUTHENTICATION - Verify user is logged in
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
-    const { payment_method_id } = await request.json()
+    // 2. RATE LIMITING - Prevent payment spam (5 req/min per user)
+    const rateLimitResult = await withRateLimit(request, RATE_LIMITS.PAYMENT, user.id)
+    if (rateLimitResult) return rateLimitResult
 
-    if (!payment_method_id) {
-      return NextResponse.json({ error: 'Payment method is required' }, { status: 400 })
+    // 3. INPUT VALIDATION - Validate path parameters
+    const paramsValidation = validateData(RequestIdParamSchema, params)
+    if (!paramsValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid request ID format' },
+        { status: 400 }
+      )
     }
 
-    // Get the request
+    // 4. INPUT VALIDATION - Validate request body
+    const body = await request.json()
+    const validation = validateData(AuthorizePaymentSchema, body)
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validation.error },
+        { status: 400 }
+      )
+    }
+
+    const { payment_method_id } = validation.data
+
+    // 5. AUTHORIZATION - Get request and verify ownership
     const { data: req, error: reqError } = await supabase
       .from('requests')
-      .select('*')
+      .select('id, player_id, stringer_id, status, final_price_cents, payment_intent_id, payment_authorized_at')
       .eq('id', params.id)
-      .eq('player_id', user.id)
+      .eq('player_id', user.id) // CRITICAL: Ensure player owns this request
       .single()
 
-    console.log('Request lookup:', { req, reqError, userId: user.id, requestId: params.id })
-
     if (reqError || !req) {
-      console.error('Request query error:', reqError)
-      return NextResponse.json({
-        error: 'Request not found or cannot be paid',
-        details: reqError?.message
-      }, { status: 404 })
+      // Non-leaky error message - don't reveal if request exists
+      return NextResponse.json(
+        { error: 'Request not found or access denied' },
+        { status: 404 }
+      )
     }
 
-    // Check status separately for better error message
+    // 6. STATE VALIDATION - Check request is in correct status
     if (req.status !== 'accepted') {
-      console.error('Request status error:', { currentStatus: req.status, expected: 'accepted' })
-      return NextResponse.json({
-        error: `Request cannot be paid in ${req.status} status`,
-        details: 'Request must be in accepted status'
-      }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Payment can only be authorized for accepted requests' },
+        { status: 400 }
+      )
     }
 
-    if (!req.final_price_cents) {
-      return NextResponse.json({ error: 'No final price set for this request' }, { status: 400 })
+    // 7. BUSINESS LOGIC VALIDATION - Verify price exists
+    if (!req.final_price_cents || req.final_price_cents < 100) {
+      return NextResponse.json(
+        { error: 'Invalid request price' },
+        { status: 400 }
+      )
     }
 
-    // Get stringer's Stripe account ID from stringer_settings
+    // 8. IDEMPOTENCY CHECK - Prevent duplicate authorization
+    if (req.payment_intent_id && req.payment_authorized_at) {
+      return NextResponse.json(
+        {
+          error: 'Payment already authorized',
+          payment_intent_id: req.payment_intent_id
+        },
+        { status: 409 } // Conflict
+      )
+    }
+
+    // 9. STRINGER VERIFICATION - Get stringer's Stripe account
     const { data: stringerSettings, error: stringerError } = await supabase
       .from('stringer_settings')
       .select('stripe_account_id, stripe_onboarding_completed, stripe_charges_enabled')
       .eq('id', req.stringer_id)
       .single()
 
-    console.log('Stringer settings lookup:', { stringerSettings, stringerError, stringerId: req.stringer_id })
-
     if (stringerError || !stringerSettings?.stripe_account_id) {
-      console.error('Stringer settings error:', stringerError)
-      return NextResponse.json({
-        error: 'Stringer has not connected their bank account yet',
-        details: stringerError?.message
-      }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Stringer payment account not configured' },
+        { status: 400 }
+      )
     }
 
-    // Verify stringer has completed onboarding
+    // 10. STRIPE VERIFICATION - Ensure stringer completed onboarding
     if (!stringerSettings.stripe_onboarding_completed || !stringerSettings.stripe_charges_enabled) {
-      return NextResponse.json({
-        error: 'Stringer has not completed Stripe onboarding'
-      }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Stringer cannot receive payments yet' },
+        { status: 400 }
+      )
     }
 
-    // Check if payment already authorized
-    if (req.payment_intent_id && req.payment_authorized_at) {
-      return NextResponse.json({
-        error: 'Payment already authorized for this request',
-        payment_intent_id: req.payment_intent_id
-      }, { status: 400 })
+    // 11. PAYMENT AUTHORIZATION - Create Stripe PaymentIntent
+    // This is a Stripe API call - errors are caught and sanitized
+    let paymentResult
+    try {
+      paymentResult = await authorizePayment({
+        amount_cents: req.final_price_cents,
+        player_id: user.id,
+        stringer_account_id: stringerSettings.stripe_account_id,
+        request_id: params.id,
+        payment_method_id: payment_method_id,
+        description: `Stringing service for request #${params.id.slice(0, 8)}`
+      })
+    } catch (stripeError: any) {
+      // Sanitize Stripe errors - don't leak sensitive info
+      console.error('Stripe authorization error:', stripeError)
+      return NextResponse.json(
+        { error: 'Payment processing failed' },
+        { status: 500 }
+      )
     }
 
-    // Authorize payment (create PaymentIntent with manual capture)
-    console.log('Authorizing payment:', {
-      amount_cents: req.final_price_cents,
-      stringer_account_id: stringerSettings.stripe_account_id,
-      request_id: params.id
-    })
-
-    const paymentResult = await authorizePayment({
-      amount_cents: req.final_price_cents,
-      player_id: user.id,
-      stringer_account_id: stringerSettings.stripe_account_id,
-      request_id: params.id,
-      payment_method_id: payment_method_id,
-      description: `Stringing service for request #${params.id.slice(0, 8)}`
-    })
-
-    console.log('Payment authorized:', paymentResult)
-
-    // Use database function to update request (bypasses RLS)
+    // 12. DATABASE UPDATE - Use RPC to bypass RLS and ensure atomic update
     const { data: authResult, error: dbError } = await supabase
       .rpc('authorize_request_payment', {
         p_request_id: params.id,
@@ -114,23 +161,22 @@ export async function POST(
         p_stringer_earnings_cents: paymentResult.stringer_earnings_cents
       })
 
-    console.log('Authorization result:', { authResult, dbError })
-
     if (dbError) {
-      console.error('Error authorizing payment in database:', dbError)
-      return NextResponse.json({
-        error: 'Failed to save payment information',
-        details: dbError.message,
-        code: dbError.code
-      }, { status: 500 })
+      console.error('Database authorization error:', dbError)
+      // Don't leak database errors to client
+      return NextResponse.json(
+        { error: 'Failed to save payment authorization' },
+        { status: 500 }
+      )
     }
 
-    // Initialize stringing tasks now that payment is authorized
+    // 13. TASK INITIALIZATION - Create stringing workflow tasks
     const { error: tasksError } = await supabase
       .rpc('initialize_stringing_tasks', { p_request_id: params.id })
 
     if (tasksError) {
-      console.error('Error initializing tasks:', tasksError)
+      console.error('Task initialization error:', tasksError)
+      // Non-critical error - tasks can be created later
       // Fallback: create tasks manually
       const taskTypes = [
         'receive_racket',
@@ -145,23 +191,20 @@ export async function POST(
       ]
 
       for (let i = 0; i < taskTypes.length; i++) {
-        try {
-          await supabase
-            .from('stringing_tasks')
-            .insert({
-              request_id: params.id,
-              task_type: taskTypes[i],
-              status: 'pending',
-              task_order: i + 1,
-              is_required: !['inspect_frame', 'completion_photo'].includes(taskTypes[i])
-            })
-        } catch (error) {
-          // Ignore errors - tasks might already exist
-        }
+        await supabase
+          .from('stringing_tasks')
+          .insert({
+            request_id: params.id,
+            task_type: taskTypes[i],
+            status: 'pending',
+            task_order: i + 1,
+            is_required: !['inspect_frame', 'completion_photo'].includes(taskTypes[i])
+          })
+          .then(() => {}, () => {}) // Ignore errors - tasks might exist
       }
     }
 
-    // Log state transition
+    // 14. AUDIT LOGGING - Record state transition
     await supabase
       .from('request_state_changes')
       .insert({
@@ -175,6 +218,7 @@ export async function POST(
         }
       })
 
+    // 15. SUCCESS RESPONSE - Return sanitized payment info
     return NextResponse.json({
       success: true,
       payment_intent_id: paymentResult.payment_intent_id,
@@ -182,10 +226,13 @@ export async function POST(
       platform_fee_cents: paymentResult.platform_fee_cents,
       stringer_earnings_cents: paymentResult.stringer_earnings_cents
     })
+
   } catch (error: any) {
+    // Global error handler - sanitize all errors
     console.error('Payment authorization error:', error)
-    return NextResponse.json({
-      error: error.message || 'Failed to authorize payment'
-    }, { status: 500 })
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    )
   }
 }

@@ -1,10 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
+import path from 'path'
 
+// Try loading from apps/web/.env.local first, fallback to root .env.local
+config({ path: path.join(__dirname, '../apps/web/.env.local') })
 config({ path: '.env.local' })
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
 if (!supabaseServiceKey) {
   console.error('SUPABASE_SERVICE_ROLE_KEY is required')
@@ -418,13 +421,21 @@ async function seedData() {
         continue
       }
 
-      // Create stringer settings
+      // Create stringer settings WITHOUT Stripe account
+      // Stringers must complete real Stripe Connect onboarding to test payments
+      // This ensures the payment flow works correctly in development
       const { error: settingsError } = await supabase
         .from('stringer_settings')
         .insert({
           id: authData.user.id,
           ...stringer.settings,
-          onboarding_completed_at: new Date().toISOString()
+          onboarding_completed_at: new Date().toISOString(),
+          // Stripe fields left null - stringers must complete real onboarding
+          stripe_account_id: null,
+          stripe_onboarding_completed: false,
+          stripe_charges_enabled: false,
+          stripe_payouts_enabled: false,
+          accepting_requests: true
         })
 
       if (settingsError) {

@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Calculate payment breakdown
-    const quotedPrice = jobRequest.quoted_price_cents || 0
+    // Calculate payment breakdown - use final_price_cents (set when stringer accepts)
+    const quotedPrice = jobRequest.final_price_cents || 0
     if (quotedPrice === 0) {
       return NextResponse.json({ error: 'No price quoted for this job' }, { status: 400 })
     }

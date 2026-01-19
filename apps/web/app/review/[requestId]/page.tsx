@@ -31,6 +31,7 @@ export default function ReviewPage() {
   const [comment, setComment] = useState('')
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [skipping, setSkipping] = useState(false)
 
   useEffect(() => {
     fetchRequestData()
@@ -165,6 +166,33 @@ export default function ReviewPage() {
     }
   }
 
+  const handleSkip = async () => {
+    try {
+      setSkipping(true)
+      setError('')
+
+      // Complete the request without a review (captures payment)
+      const response = await fetch(`/api/requests/${requestId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Complete request error:', errorData)
+        throw new Error(`Failed to complete request: ${errorData.error || response.statusText}`)
+      }
+
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error skipping review:', error)
+      setError('Failed to complete request. Please try again.')
+    } finally {
+      setSkipping(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
@@ -296,11 +324,18 @@ export default function ReviewPage() {
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => router.push('/dashboard')}
-                disabled={submitting}
+                onClick={handleSkip}
+                disabled={submitting || skipping}
                 className="flex-1"
               >
-                Skip for Now
+                {skipping ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Completing...
+                  </>
+                ) : (
+                  'Skip for Now'
+                )}
               </Button>
               <Button
                 onClick={handleSubmit}

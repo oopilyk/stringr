@@ -206,6 +206,165 @@ export const CreateRequestSchema = z.object({
   estimated_price_cents: z.number().min(0),
 })
 
+// API Request Validation Schemas
+// Added for OWASP security hardening - validates all user inputs
+
+/**
+ * UUID validation helper
+ * Prevents SQL injection and ensures proper format
+ */
+const uuidSchema = z.string().uuid('Invalid ID format')
+
+/**
+ * Accept Request Schema
+ * Validates stringer accepting a job with quote
+ */
+export const AcceptRequestSchema = z.object({
+  estimated_completion: z.string().datetime().optional().nullable(),
+  accept_message: z.string().max(500, 'Message too long').optional().nullable(),
+  confirmed_string_brand: z.string().max(50).optional().nullable(),
+  confirmed_string_model: z.string().max(50).optional().nullable(),
+  confirmed_string_gauge: z.string().max(20).optional().nullable(),
+  confirmed_tension_mains_lbs: z.number().min(10).max(90).optional().nullable(),
+  confirmed_tension_crosses_lbs: z.number().min(10).max(90).optional().nullable(),
+  string_issue_notes: z.string().max(1000).optional().nullable(),
+  racket_count: z.number().int().min(1).max(10).optional().nullable(),
+  final_price_cents: z.number().int().min(100, 'Price must be at least $1').max(1000000, 'Price too high')
+}).strict() // Reject unexpected fields
+
+/**
+ * Cancel Request Schema
+ * Validates request cancellation with reason
+ */
+export const CancelRequestSchema = z.object({
+  reason: z.string().min(1, 'Reason is required').max(500, 'Reason too long'),
+  cancellation_reason: z.enum([
+    'requested_by_customer',
+    'fraudulent',
+    'duplicate',
+    'abandoned',
+    'other'
+  ]).optional()
+}).strict()
+
+/**
+ * Pause Request Schema
+ * Validates job pause with reason
+ */
+export const PauseRequestSchema = z.object({
+  pause_reason: z.string().min(1, 'Reason is required').max(500, 'Reason too long')
+}).strict()
+
+/**
+ * Mark Ready Schema
+ * Validates marking job as ready for pickup
+ */
+export const MarkReadySchema = z.object({
+  completion_notes: z.string().max(1000, 'Notes too long').optional().nullable(),
+  completion_photo_url: z.string().url('Invalid photo URL'),
+  actual_string_installed: z.object({
+    brand: z.string().max(50),
+    model: z.string().max(50),
+    gauge: z.string().max(20)
+  }).optional().nullable()
+}).strict()
+
+/**
+ * Report Issue Schema
+ * Validates reporting string/tension issues
+ */
+export const ReportIssueSchema = z.object({
+  issue_type: z.enum(['string_unavailable', 'string_damaged', 'tension_issue', 'other']),
+  issue_notes: z.string().min(1, 'Notes are required').max(1000, 'Notes too long'),
+  corrected_string_brand: z.string().max(50).optional().nullable(),
+  corrected_string_model: z.string().max(50).optional().nullable(),
+  corrected_string_gauge: z.string().max(20).optional().nullable(),
+  corrected_tension_mains: z.number().min(10).max(90).optional().nullable(),
+  corrected_tension_crosses: z.number().min(10).max(90).optional().nullable()
+}).strict()
+
+/**
+ * Update Task Schema
+ * Validates task status updates
+ */
+export const UpdateTaskSchema = z.object({
+  status: z.enum(['pending', 'in_progress', 'completed', 'skipped']),
+  notes: z.string().max(500, 'Notes too long').optional().nullable(),
+  photo_url: z.string().url('Invalid photo URL').optional().nullable()
+}).strict()
+
+/**
+ * Redo Task Schema
+ * Validates task redo request
+ */
+export const RedoTaskSchema = z.object({
+  redo_reason: z.string().min(1, 'Reason is required').max(500, 'Reason too long')
+}).strict()
+
+/**
+ * Authorize Payment Schema
+ * Validates payment authorization request
+ */
+export const AuthorizePaymentSchema = z.object({
+  payment_method_id: z.string().min(1, 'Payment method is required').max(255)
+}).strict()
+
+/**
+ * Message Schema
+ * Validates conversation messages
+ * Prevents XSS and message spam
+ */
+export const MessageSchema = z.object({
+  body: z.string()
+    .min(1, 'Message cannot be empty')
+    .max(5000, 'Message too long (max 5000 characters)')
+    .trim()
+}).strict()
+
+/**
+ * Create Conversation Schema
+ * Validates conversation creation
+ */
+export const CreateConversationSchema = z.object({
+  otherUserId: uuidSchema
+}).strict()
+
+/**
+ * Stripe Request ID Schema
+ * Validates Stripe payment operations
+ */
+export const StripeRequestIdSchema = z.object({
+  requestId: uuidSchema
+}).strict()
+
+/**
+ * Upload Token Schema
+ * Validates photo upload tokens
+ * Format: {requestId}-{timestamp}
+ */
+export const UploadTokenSchema = z.object({
+  token: z.string().regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d+$/,
+    'Invalid upload token format'
+  )
+}).strict()
+
+/**
+ * Path Parameter Schemas
+ * Validates URL parameters
+ */
+export const RequestIdParamSchema = z.object({
+  id: uuidSchema
+})
+
+export const TaskIdParamSchema = z.object({
+  taskId: uuidSchema
+})
+
+export const ConversationIdParamSchema = z.object({
+  id: uuidSchema
+})
+
 // Export types for TypeScript
 export type SignInInput = z.infer<typeof SignInSchema>
 export type SignUpInput = z.infer<typeof SignUpSchema>
@@ -214,3 +373,14 @@ export type StringerBackgroundInput = z.infer<typeof StringerBackgroundSchema>
 export type ContactFormInput = z.infer<typeof ContactFormSchema>
 export type ReviewInput = z.infer<typeof ReviewSchema>
 export type CreateRequestInput = z.infer<typeof CreateRequestSchema>
+export type AcceptRequestInput = z.infer<typeof AcceptRequestSchema>
+export type CancelRequestInput = z.infer<typeof CancelRequestSchema>
+export type PauseRequestInput = z.infer<typeof PauseRequestSchema>
+export type MarkReadyInput = z.infer<typeof MarkReadySchema>
+export type ReportIssueInput = z.infer<typeof ReportIssueSchema>
+export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>
+export type RedoTaskInput = z.infer<typeof RedoTaskSchema>
+export type AuthorizePaymentInput = z.infer<typeof AuthorizePaymentSchema>
+export type MessageInput = z.infer<typeof MessageSchema>
+export type CreateConversationInput = z.infer<typeof CreateConversationSchema>
+export type StripeRequestIdInput = z.infer<typeof StripeRequestIdSchema>

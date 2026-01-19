@@ -13,6 +13,7 @@ import { StringingProgressPanel } from '@/components/requests/stringing-progress
 import { PlayerRequestStatus } from '@/components/requests/player-request-status'
 import { AcceptJobModal } from '@/components/requests/accept-job-modal'
 import { AuthorizePaymentModal } from '@/components/requests/authorize-payment-modal'
+import { CancelRequestModal } from '@/components/requests/cancel-request-modal'
 import { RequestStatus } from '@stringerly/types'
 
 interface Request {
@@ -62,6 +63,7 @@ interface Request {
   }
   stringer?: {
     full_name: string
+    avatar_url?: string | null
   }
 }
 
@@ -90,6 +92,7 @@ export default function RequestDetailsPage() {
   const [isAccepting, setIsAccepting] = useState(false)
   const [showAcceptModal, setShowAcceptModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -119,7 +122,7 @@ export default function RequestDetailsPage() {
         // Fetch the stringer profile
         const { data: stringerProfile, error: stringerError } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, avatar_url')
           .eq('id', requestData.stringer_id)
           .single()
 
@@ -270,7 +273,7 @@ export default function RequestDetailsPage() {
                   <div className="text-3xl font-bold text-green-600">
                     {formatPrice(request.final_price_cents || request.estimated_price_cents)}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Estimated Price</p>
+                  <p className="text-sm text-gray-500 mt-1">{request.final_price_cents ? 'Final Quote' : 'Estimated Price'}</p>
                 </>
               )}
             </div>
@@ -538,7 +541,11 @@ export default function RequestDetailsPage() {
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Accept Request
                   </Button>
-                  <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">
+                  <Button
+                    variant="outline"
+                    className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={() => setShowCancelModal(true)}
+                  >
                     <XCircle className="w-4 h-4 mr-2" />
                     Decline Request
                   </Button>
@@ -556,19 +563,31 @@ export default function RequestDetailsPage() {
             )}
 
             {/* Player View - Show workflow progress for players */}
-            {isPlayer && ['accepted', 'in_progress', 'ready_for_pickup'].includes(request.status) && request.player && request.stringer && (
+            {isPlayer && ['accepted', 'in_progress', 'ready_for_pickup'].includes(request.status) && request.stringer && (
               <PlayerRequestStatus
                 request={request}
-                stringer={{ id: request.stringer_id, full_name: request.stringer.full_name, avatar_url: null }}
+                stringer={{ id: request.stringer_id, full_name: request.stringer.full_name, avatar_url: request.stringer.avatar_url || null }}
               />
             )}
 
             {(isPlayer || (isStringer && request.status !== ('pending' as RequestStatus))) && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-white rounded-lg shadow-md p-6 space-y-3">
                 <Button variant="outline" className="w-full">
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Send Message
                 </Button>
+
+                {/* Cancel button for active requests */}
+                {['pending', 'accepted', 'in_progress'].includes(request.status) && (
+                  <Button
+                    variant="outline"
+                    className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={() => setShowCancelModal(true)}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel Request
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -606,6 +625,22 @@ export default function RequestDetailsPage() {
             window.location.reload() // Reload to show updated payment status
           }}
           onCancel={() => setShowPaymentModal(false)}
+        />
+      )}
+
+      {/* Cancel Request Modal */}
+      {showCancelModal && request && (
+        <CancelRequestModal
+          request={{
+            id: request.id,
+            status: request.status,
+            final_price_cents: request.final_price_cents || undefined,
+            estimated_price_cents: request.estimated_price_cents,
+            payment_intent_id: request.payment_intent_id || undefined,
+            payment_captured_at: request.payment_authorized_at || undefined
+          }}
+          userRole={isPlayer ? 'player' : 'stringer'}
+          onCancel={() => setShowCancelModal(false)}
         />
       )}
     </div>

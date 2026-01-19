@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Button } from '@stringerly/ui'
@@ -161,11 +161,11 @@ export function PaymentAuthorizationModal({
   const [error, setError] = useState<string | null>(null)
 
   // Fetch client secret when modal opens
-  useState(() => {
+  useEffect(() => {
     if (isOpen && !clientSecret) {
       fetchClientSecret()
     }
-  })
+  }, [isOpen])
 
   const fetchClientSecret = async () => {
     try {

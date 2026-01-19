@@ -1,24 +1,51 @@
 import { createServerClient } from '@/lib/supabase-server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withRateLimit, RATE_LIMITS } from '@/lib/security/rate-limit'
+import { validateData, MessageSchema, ConversationIdParamSchema } from '@/lib/validation/schemas'
 
-// GET /api/conversations/[id]/messages - Get all messages for a conversation
+/**
+ * GET /api/conversations/[id]/messages - Get all messages for a conversation
+ *
+ * SECURITY:
+ * - Rate limited to 100 req/min (read operations)
+ * - UUID validation on path parameters
+ * - Authentication required
+ * - Authorization: only participants can read messages
+ * - Database error sanitization
+ */
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const supabase = createServerClient()
 
-    // Get current user
+    // 1. AUTHENTICATION - Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // 2. RATE LIMITING - Prevent abuse (100 req/min for reads)
+    const rateLimitResult = await withRateLimit(request, RATE_LIMITS.READ, user.id)
+    if (rateLimitResult) return rateLimitResult
+
+    // 3. INPUT VALIDATION - Validate path parameters
+    const paramsValidation = validateData(ConversationIdParamSchema, params)
+    if (!paramsValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid conversation ID format' },
+        { status: 400 }
+      )
     }
 
     const conversationId = params.id
 
-    // Verify user is part of this conversation
+    // 4. AUTHORIZATION - Verify user is participant in this conversation
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('participant_one_id, participant_two_id')
@@ -26,31 +53,38 @@ export async function GET(
       .single()
 
     if (convError || !conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+      console.error('[Get Messages] Conversation not found:', conversationId)
+      return NextResponse.json(
+        { error: 'Conversation not found or access denied' },
+        { status: 404 }
+      )
     }
 
     if (conversation.participant_one_id !== user.id && conversation.participant_two_id !== user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      console.error('[Get Messages] Unauthorized access attempt:', { conversationId, userId: user.id })
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
     }
 
-    // Fetch messages
+    // 5. DATABASE OPERATION - Fetch messages
     const { data: messages, error } = await supabase
       .from('messages')
-      .select(`
-        id,
-        body,
-        sender_id,
-        created_at
-      `)
+      .select('id, body, sender_id, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Error fetching messages:', error)
-      return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
+      console.error('[Get Messages] Database query failed:', error.message)
+      // SECURITY: Don't expose database details
+      return NextResponse.json(
+        { error: 'Failed to fetch messages. Please try again.' },
+        { status: 500 }
+      )
     }
 
-    // Transform messages to include fromMe flag
+    // 6. TRANSFORM - Add fromMe flag for UI
     const transformedMessages = messages.map((msg) => ({
       id: msg.id,
       body: msg.body,
@@ -59,36 +93,77 @@ export async function GET(
       createdAt: msg.created_at
     }))
 
+    // 7. SUCCESS RESPONSE
     return NextResponse.json({ messages: transformedMessages })
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+
+  } catch (error: any) {
+    // SECURITY: Global error handler - sanitize all errors
+    console.error('[Get Messages] Unexpected error:', error)
+    return NextResponse.json(
+      { error: 'An unexpected error occurred. Please try again.' },
+      { status: 500 }
+    )
   }
 }
 
-// POST /api/conversations/[id]/messages - Send a message to a conversation
+/**
+ * POST /api/conversations/[id]/messages - Send a message to a conversation
+ *
+ * SECURITY:
+ * - Rate limited to 30 req/min (prevents message spam)
+ * - UUID validation on path parameters
+ * - Strict input validation (max 5000 chars, prevents XSS)
+ * - Authentication required
+ * - Authorization: only participants can send messages
+ * - Message trimming to prevent whitespace spam
+ * - Database error sanitization
+ */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const supabase = createServerClient()
 
-    // Get current user
+    // 1. AUTHENTICATION - Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // 2. RATE LIMITING - Prevent message spam (30 req/min)
+    const rateLimitResult = await withRateLimit(request, RATE_LIMITS.MUTATION, user.id)
+    if (rateLimitResult) return rateLimitResult
+
+    // 3. INPUT VALIDATION - Validate path parameters
+    const paramsValidation = validateData(ConversationIdParamSchema, params)
+    if (!paramsValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid conversation ID format' },
+        { status: 400 }
+      )
     }
 
     const conversationId = params.id
-    const { body } = await request.json()
 
-    if (!body || body.trim().length === 0) {
-      return NextResponse.json({ error: 'Message body is required' }, { status: 400 })
+    // 4. INPUT VALIDATION - Validate message body
+    const requestBody = await request.json()
+    const validation = validateData(MessageSchema, requestBody)
+    if (!validation.success) {
+      console.error('[Send Message] Validation failed:', validation.error)
+      return NextResponse.json(
+        { error: 'Invalid message', details: validation.error },
+        { status: 400 }
+      )
     }
 
-    // Verify user is part of this conversation
+    const { body } = validation.data
+
+    // 5. AUTHORIZATION - Verify user is participant in this conversation
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('participant_one_id, participant_two_id')
@@ -96,30 +171,45 @@ export async function POST(
       .single()
 
     if (convError || !conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+      console.error('[Send Message] Conversation not found:', conversationId)
+      return NextResponse.json(
+        { error: 'Conversation not found or access denied' },
+        { status: 404 }
+      )
     }
 
     if (conversation.participant_one_id !== user.id && conversation.participant_two_id !== user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      console.error('[Send Message] Unauthorized access attempt:', { conversationId, userId: user.id })
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
     }
 
-    // Insert message
+    // 6. DATABASE OPERATION - Insert message
     const { data: message, error } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        body: body.trim()
+        body: body
       })
-      .select()
+      .select('id, body, sender_id, created_at')
       .single()
 
     if (error) {
-      console.error('Error sending message:', error)
-      return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+      console.error('[Send Message] Database insert failed:', error.message)
+      // SECURITY: Don't expose database details
+      return NextResponse.json(
+        { error: 'Failed to send message. Please try again.' },
+        { status: 500 }
+      )
     }
 
+    // 7. SUCCESS RESPONSE
+    console.log(`[Send Message] Success: Message sent in conversation ${conversationId} by user ${user.id}`)
     return NextResponse.json({
+      success: true,
       message: {
         id: message.id,
         body: message.body,
@@ -128,8 +218,13 @@ export async function POST(
         createdAt: message.created_at
       }
     })
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+
+  } catch (error: any) {
+    // SECURITY: Global error handler - sanitize all errors
+    console.error('[Send Message] Unexpected error:', error)
+    return NextResponse.json(
+      { error: 'An unexpected error occurred. Please try again.' },
+      { status: 500 }
+    )
   }
 }

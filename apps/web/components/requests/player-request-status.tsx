@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Button } from '@stringerly/ui'
-import { Check, Clock, Package, Loader2, MessageSquare, CheckCircle } from 'lucide-react'
+import { Button, formatPrice } from '@stringerly/ui'
+import { Check, Clock, Package, Loader2, MessageSquare, CheckCircle, DollarSign } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface StringingTask {
   id: string
@@ -24,6 +25,9 @@ interface Request {
   completion_notes: string | null
   completion_photo_url: string | null
   stringer_id: string
+  final_price_cents?: number | null
+  estimated_price_cents?: number
+  payment_authorized_at?: string | null
 }
 
 interface Stringer {
@@ -53,6 +57,7 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
   const [isLoading, setIsLoading] = useState(true)
   const [isCompleting, setIsCompleting] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     if (request.status !== 'pending') {
@@ -170,8 +175,82 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
     )
   }
 
-  // Accepted state - stringer accepted, not started yet
-  if (request.status === 'accepted' && !request.work_started_at) {
+  // Accepted state - stringer sent quote, waiting for payment authorization
+  if (request.status === 'accepted' && !request.payment_authorized_at) {
+    const quotePrice = request.final_price_cents || request.estimated_price_cents || 0
+    return (
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg shadow-lg border-2 border-amber-300 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Quote Received!</h2>
+              <p className="text-amber-100 text-sm">Payment Authorization Required</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {/* Stringer Info */}
+          <div className="flex items-center gap-4 mb-6">
+            <img
+              src={stringer.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=stringer'}
+              alt={stringer.full_name}
+              className="w-14 h-14 rounded-full object-cover border-2 border-amber-300"
+            />
+            <div>
+              <p className="text-sm text-gray-600">Quote from</p>
+              <p className="font-bold text-gray-900 text-lg">{stringer.full_name}</p>
+            </div>
+          </div>
+
+          {/* Quote Amount */}
+          <div className="mb-6 p-4 bg-white rounded-lg border-2 border-amber-300">
+            <p className="text-sm text-gray-600 mb-2">{stringer.full_name} is ready to string your racket for:</p>
+            <div className="text-3xl font-bold text-amber-600 mb-2">
+              {formatPrice(quotePrice)}
+            </div>
+            {request.estimated_completion && (
+              <p className="text-xs text-gray-600">
+                Estimated completion: {new Date(request.estimated_completion).toLocaleString()}
+              </p>
+            )}
+          </div>
+
+          {/* Escrow Info */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-medium text-blue-900 mb-1">💳 Secure Escrow Payment</p>
+            <p className="text-xs text-blue-700">
+              Your payment will be held securely and only released to the stringer after you confirm the completed work. You're protected by Stripe.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-3">
+            <Button
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => router.push(`/request/${request.id}`)}
+            >
+              <Check className="w-4 h-4 mr-2" />
+              View Quote & Authorize Payment
+            </Button>
+            <Link href={`/messages?conversation=${stringer.id}`} className="block">
+              <Button variant="outline" className="w-full">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Message {stringer.full_name}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Accepted state with payment authorized - work not started yet
+  if (request.status === 'accepted' && request.payment_authorized_at && !request.work_started_at) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-8">
@@ -179,10 +258,10 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Request Accepted!
+            Payment Authorized!
           </h3>
           <p className="text-gray-600 mb-2">
-            {stringer.full_name} has accepted your request.
+            {stringer.full_name} will begin working on your racket soon.
           </p>
           {request.estimated_completion && (
             <p className="text-sm text-gray-500 mb-4">

@@ -339,6 +339,9 @@ export type Database = {
           decline_reason: string | null
           declined_at: string | null
           delay_reason: string | null
+          dispute_id: string | null
+          dispute_reason: string | null
+          dispute_status: string | null
           dropoff_method: Json
           estimated_completion: string | null
           estimated_price_cents: number
@@ -350,7 +353,9 @@ export type Database = {
           paused_at: string | null
           payment_authorized_at: string | null
           payment_captured_at: string | null
+          payment_failure_reason: string | null
           payment_intent_id: string | null
+          payment_status: string | null
           platform_fee_cents: number | null
           player_id: string
           preferred_completion_date: string | null
@@ -358,6 +363,8 @@ export type Database = {
           racket_count: number | null
           racket_photo_url: string
           ready_at: string | null
+          refund_amount_cents: number | null
+          refunded_at: string | null
           resumed_at: string | null
           rework_count: number | null
           scheduled_at: string | null
@@ -394,6 +401,9 @@ export type Database = {
           decline_reason?: string | null
           declined_at?: string | null
           delay_reason?: string | null
+          dispute_id?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
           dropoff_method: Json
           estimated_completion?: string | null
           estimated_price_cents: number
@@ -405,7 +415,9 @@ export type Database = {
           paused_at?: string | null
           payment_authorized_at?: string | null
           payment_captured_at?: string | null
+          payment_failure_reason?: string | null
           payment_intent_id?: string | null
+          payment_status?: string | null
           platform_fee_cents?: number | null
           player_id: string
           preferred_completion_date?: string | null
@@ -413,6 +425,8 @@ export type Database = {
           racket_count?: number | null
           racket_photo_url: string
           ready_at?: string | null
+          refund_amount_cents?: number | null
+          refunded_at?: string | null
           resumed_at?: string | null
           rework_count?: number | null
           scheduled_at?: string | null
@@ -449,6 +463,9 @@ export type Database = {
           decline_reason?: string | null
           declined_at?: string | null
           delay_reason?: string | null
+          dispute_id?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
           dropoff_method?: Json
           estimated_completion?: string | null
           estimated_price_cents?: number
@@ -460,7 +477,9 @@ export type Database = {
           paused_at?: string | null
           payment_authorized_at?: string | null
           payment_captured_at?: string | null
+          payment_failure_reason?: string | null
           payment_intent_id?: string | null
+          payment_status?: string | null
           platform_fee_cents?: number | null
           player_id?: string
           preferred_completion_date?: string | null
@@ -468,6 +487,8 @@ export type Database = {
           racket_count?: number | null
           racket_photo_url?: string
           ready_at?: string | null
+          refund_amount_cents?: number | null
+          refunded_at?: string | null
           resumed_at?: string | null
           rework_count?: number | null
           scheduled_at?: string | null
@@ -743,6 +764,16 @@ export type Database = {
       all_required_tasks_completed: {
         Args: { p_request_id: string }
         Returns: boolean
+      }
+      authorize_request_payment: {
+        Args: {
+          p_payment_intent_id: string
+          p_platform_fee_cents: number
+          p_player_id: string
+          p_request_id: string
+          p_stringer_earnings_cents: number
+        }
+        Returns: Json
       }
       calculate_distance: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }

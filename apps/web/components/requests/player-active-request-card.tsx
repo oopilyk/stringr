@@ -27,6 +27,7 @@ interface Request {
   ready_at: string | null
   completed_at: string | null
   estimated_price_cents: number
+  final_price_cents?: number | null
   stringer_id: string
   service_type: string
   completion_photo_url?: string
@@ -166,7 +167,7 @@ export function PlayerActiveRequestCard({ request, stringer }: PlayerActiveReque
           <div className="mb-6 p-4 bg-white rounded-lg border-2 border-yellow-300">
             <p className="text-sm text-gray-600 mb-2">Your stringer has accepted your request with a final quote of:</p>
             <div className="text-3xl font-bold text-yellow-600 mb-2">
-              {formatPrice(request.estimated_price_cents)}
+              {formatPrice(request.final_price_cents || request.estimated_price_cents)}
             </div>
             <p className="text-xs text-gray-600">
               ⚡ Work will begin as soon as you authorize payment
