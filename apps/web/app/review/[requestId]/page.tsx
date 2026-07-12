@@ -70,7 +70,7 @@ export default function ReviewPage() {
       // Check if review already exists
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.push('/auth/login')
+        router.push('/auth/signin')
         return
       }
 
@@ -106,7 +106,7 @@ export default function ReviewPage() {
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.push('/auth/login')
+        router.push('/auth/signin')
         return
       }
 

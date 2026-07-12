@@ -384,7 +384,7 @@ export function DiscoverPage({ isAuthenticated = false }: DiscoverPageProps) {
                   <Button
                     variant="outline"
                     className="w-full h-12"
-                    onClick={() => window.location.href = '/auth/login'}
+                    onClick={() => window.location.href = '/auth/signin'}
                   >
                     Sign In
                   </Button>

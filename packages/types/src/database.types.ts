@@ -345,6 +345,11 @@ export type Database = {
           dropoff_method: Json
           estimated_completion: string | null
           estimated_price_cents: number
+          extension_approved: boolean | null
+          extension_request_reason: string | null
+          extension_requested_at: string | null
+          extension_response_at: string | null
+          extension_response_reason: string | null
           final_price_cents: number | null
           id: string
           is_paused: boolean | null
@@ -356,10 +361,12 @@ export type Database = {
           payment_failure_reason: string | null
           payment_intent_id: string | null
           payment_status: string | null
+          pickup_deadline: string | null
           platform_fee_cents: number | null
           player_id: string
           preferred_completion_date: string | null
           preferred_time_slot: Json | null
+          queue_priority: number | null
           racket_count: number | null
           racket_photo_url: string
           ready_at: string | null
@@ -407,6 +414,11 @@ export type Database = {
           dropoff_method: Json
           estimated_completion?: string | null
           estimated_price_cents: number
+          extension_approved?: boolean | null
+          extension_request_reason?: string | null
+          extension_requested_at?: string | null
+          extension_response_at?: string | null
+          extension_response_reason?: string | null
           final_price_cents?: number | null
           id?: string
           is_paused?: boolean | null
@@ -418,10 +430,12 @@ export type Database = {
           payment_failure_reason?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
+          pickup_deadline?: string | null
           platform_fee_cents?: number | null
           player_id: string
           preferred_completion_date?: string | null
           preferred_time_slot?: Json | null
+          queue_priority?: number | null
           racket_count?: number | null
           racket_photo_url: string
           ready_at?: string | null
@@ -469,6 +483,11 @@ export type Database = {
           dropoff_method?: Json
           estimated_completion?: string | null
           estimated_price_cents?: number
+          extension_approved?: boolean | null
+          extension_request_reason?: string | null
+          extension_requested_at?: string | null
+          extension_response_at?: string | null
+          extension_response_reason?: string | null
           final_price_cents?: number | null
           id?: string
           is_paused?: boolean | null
@@ -480,10 +499,12 @@ export type Database = {
           payment_failure_reason?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
+          pickup_deadline?: string | null
           platform_fee_cents?: number | null
           player_id?: string
           preferred_completion_date?: string | null
           preferred_time_slot?: Json | null
+          queue_priority?: number | null
           racket_count?: number | null
           racket_photo_url?: string
           ready_at?: string | null
@@ -586,6 +607,7 @@ export type Database = {
           rush_fee_cents: number
           rush_turnaround_hours: number | null
           services: Json | null
+          show_town_only: boolean
           string_inventory: Json | null
           stripe_account_id: string | null
           stripe_charges_enabled: boolean | null
@@ -624,6 +646,7 @@ export type Database = {
           rush_fee_cents?: number
           rush_turnaround_hours?: number | null
           services?: Json | null
+          show_town_only?: boolean
           string_inventory?: Json | null
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean | null
@@ -662,6 +685,7 @@ export type Database = {
           rush_fee_cents?: number
           rush_turnaround_hours?: number | null
           services?: Json | null
+          show_town_only?: boolean
           string_inventory?: Json | null
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean | null
@@ -748,6 +772,80 @@ export type Database = {
           },
         ]
       }
+      user_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          description: string
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          request_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          request_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_user_id?: string
+          reporter_id?: string
+          request_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reports_reported_user_id_fkey"
+            columns: ["reported_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       user_ratings: {
@@ -763,6 +861,10 @@ export type Database = {
     Functions: {
       all_required_tasks_completed: {
         Args: { p_request_id: string }
+        Returns: boolean
+      }
+      approve_pickup_extension: {
+        Args: { p_reason?: string; p_request_id: string; p_stringer_id: string }
         Returns: boolean
       }
       authorize_request_payment: {
@@ -802,6 +904,10 @@ export type Database = {
         }
         Returns: string
       }
+      deny_pickup_extension: {
+        Args: { p_reason?: string; p_request_id: string; p_stringer_id: string }
+        Returns: boolean
+      }
       get_next_task: {
         Args: { p_request_id: string }
         Returns: string
@@ -809,6 +915,23 @@ export type Database = {
       get_or_create_conversation: {
         Args: { user_one_id: string; user_two_id: string }
         Returns: string
+      }
+      get_queue_position: {
+        Args: { p_request_id: string; p_stringer_id: string }
+        Returns: number
+      }
+      get_stringer_queue: {
+        Args: { p_stringer_id: string }
+        Returns: {
+          accepted_at: string
+          estimated_completion: string
+          is_rush: boolean
+          player_id: string
+          queue_position: number
+          request_id: string
+          status: string
+          work_started_at: string
+        }[]
       }
       increment_stringer_earnings: {
         Args: { p_amount_cents: number; p_stringer_id: string }
@@ -818,6 +941,14 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      start_racket_work: {
+        Args: { p_request_id: string; p_stringer_id: string }
+        Returns: Json
+      }
+      update_queue_priorities: {
+        Args: { p_request_ids: string[]; p_stringer_id: string }
+        Returns: boolean
+      }
       validate_request_state_transition: {
         Args: { p_new_status: string; p_request_id: string }
         Returns: boolean
@@ -826,6 +957,15 @@ export type Database = {
     Enums: {
       dropoff_method: "meetup" | "pickup" | "ship" | "dropbox"
       payment_status: "unpaid" | "paid" | "refunded"
+      report_reason:
+        | "inappropriate_behavior"
+        | "no_show"
+        | "scam_fraud"
+        | "harassment"
+        | "quality_issues"
+        | "communication_issues"
+        | "other"
+      report_status: "pending" | "under_review" | "resolved" | "dismissed"
       request_status:
         | "requested"
         | "accepted"
@@ -1486,6 +1626,16 @@ export const Constants = {
     Enums: {
       dropoff_method: ["meetup", "pickup", "ship", "dropbox"],
       payment_status: ["unpaid", "paid", "refunded"],
+      report_reason: [
+        "inappropriate_behavior",
+        "no_show",
+        "scam_fraud",
+        "harassment",
+        "quality_issues",
+        "communication_issues",
+        "other",
+      ],
+      report_status: ["pending", "under_review", "resolved", "dismissed"],
       request_status: [
         "requested",
         "accepted",

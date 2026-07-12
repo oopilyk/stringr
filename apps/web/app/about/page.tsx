@@ -1,104 +1,67 @@
-'use client'
-
-import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@stringerly/ui'
-import { ArrowLeft } from 'lucide-react'
+import { findPublicImage } from '@/lib/utils/find-public-image'
+import { HomeNav } from '@/components/home/home-nav'
+import { HomeFooter } from '@/components/home/home-footer'
 
 export default function AboutPage() {
-  const router = useRouter()
+  // Drop a photo at apps/web/public/about/founder.(jpg|jpeg|png|webp) and it
+  // replaces the placeholder panel automatically — no code change needed.
+  const photoSrc = findPublicImage('about', 'founder')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
-      {/* Navigation Bar */}
-      <nav className="relative z-50 flex items-center justify-between px-8 py-4 bg-white/95 backdrop-blur-sm shadow-sm">
-        <div className="flex items-center space-x-3">
-          <img
-            src="/racket-logo.png"
-            alt="Stringerly Logo"
-            width={48}
-            height={48}
-            className="rounded-full object-cover"
-          />
-          <span className="text-2xl font-bold text-primary">STRINGERLY</span>
-        </div>
+    <div className="min-h-screen bg-white">
+      <HomeNav />
 
-        <Button
-          variant="outline"
-          className="border-primary text-primary hover:bg-primary/10"
-          onClick={() => router.push('/auth/signin')}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
-      </nav>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-8 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            About the Creators
+      <div className="grid md:grid-cols-2">
+        <div className="flex flex-col justify-center px-8 md:px-16 py-16 md:py-24 order-2 md:order-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Founder
+          </p>
+          <h1 className="mt-4 text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+            Built by a player, for players.
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Meet the Johns Hopkins University students behind Stringerly
+
+          <p className="mt-6 text-gray-600 leading-relaxed">
+            Hi, I&apos;m Owen Akers, a Computer Science and Computer Engineering student at Johns
+            Hopkins University. I've been a tennis player for my whole life and even played on the
+            team at Hopkins.
           </p>
-        </div>
+          <p className="mt-4 text-gray-600 leading-relaxed">
+            Stringerly exists because I got tired of guessing who to trust with my racquet. It
+            connects players with certified local stringers, with transparent pricing and payment
+            that only releases once you approve the finished work.
+          </p>
 
-        {/* Creators Grid */}
-        <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-          {/* Owen Akers */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="flex flex-col items-center">
-              <div className="w-48 h-48 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full mb-6 flex items-center justify-center">
-                <span className="text-6xl font-bold text-white">OA</span>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Owen Akers</h2>
-              <p className="text-primary font-medium mb-4">Co-Founder</p>
-              <div className="w-full">
-                <p className="text-gray-600 leading-relaxed mb-4">
-                  Owen is a student at Johns Hopkins University with a passion for tennis and technology.
-                </p>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p><span className="font-semibold">School:</span> Johns Hopkins University</p>
-                  <p><span className="font-semibold">Role:</span> Co-Founder & Developer</p>
-                  <p><span className="font-semibold">Interests:</span> Tennis, Software Engineering, Entrepreneurship</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Kyle Li */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="flex flex-col items-center">
-              <div className="w-48 h-48 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full mb-6 flex items-center justify-center">
-                <span className="text-6xl font-bold text-white">KL</span>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Kyle Li</h2>
-              <p className="text-primary font-medium mb-4">Co-Founder</p>
-              <div className="w-full">
-                <p className="text-gray-600 leading-relaxed mb-4">
-                  Kyle is a student at Johns Hopkins University with a passion for tennis and innovation.
-                </p>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p><span className="font-semibold">School:</span> Johns Hopkins University</p>
-                  <p><span className="font-semibold">Role:</span> Co-Founder & Developer</p>
-                  <p><span className="font-semibold">Interests:</span> Tennis, Product Design, Technology</p>
-                </div>
-              </div>
-            </div>
+          <div className="mt-8">
+            <Link href="/contact">
+              <Button size="lg" className="rounded-full px-8 h-12 text-base">
+                Get in touch
+              </Button>
+            </Link>
           </div>
         </div>
 
-        {/* Mission Statement */}
-        <div className="mt-16 bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Our Mission</h3>
-          <p className="text-gray-600 leading-relaxed text-center">
-            We created Stringerly to solve a common problem in the tennis community: finding reliable,
-            quality stringers. As tennis players ourselves, we understand the importance of having
-            your racket strung correctly. Stringerly connects players with certified stringers, making
-            it easier than ever to maintain your equipment and focus on your game.
-          </p>
+        <div className="relative min-h-[420px] md:min-h-screen order-1 md:order-2">
+          {photoSrc ? (
+            <Image
+              src={photoSrc}
+              alt="Owen Akers, founder of Stringerly"
+              fill
+              className="object-cover"
+              sizes="(min-width: 768px) 50vw, 100vw"
+              priority
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+              <span className="text-8xl font-bold text-white">OA</span>
+            </div>
+          )}
         </div>
       </div>
+
+      <HomeFooter />
     </div>
   )
 }
