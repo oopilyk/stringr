@@ -211,12 +211,12 @@ export function StringingProgressPanel({ request, isStringer }: StringingProgres
           </div>
         </div>
 
-        {/* Estimated Completion */}
+        {/* Target Completion */}
         {request.estimated_completion && request.status !== 'completed' && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock className="w-4 h-4" />
             <span>
-              Estimated completion: {new Date(request.estimated_completion).toLocaleString()}
+              Ready by: {new Date(request.estimated_completion).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
             </span>
           </div>
         )}

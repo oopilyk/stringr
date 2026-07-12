@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { Button, formatPrice } from '@stringerly/ui'
-import { X, CreditCard, Lock, DollarSign, CheckCircle } from 'lucide-react'
+import { X, CreditCard, Lock, User } from 'lucide-react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+// App fee percentage (should match server config)
+const APP_FEE_PERCENT = 5
 
 interface AuthorizePaymentModalProps {
   request: {
@@ -25,6 +28,12 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
+  const [cardholderName, setCardholderName] = useState('')
+
+  // Calculate fee breakdown
+  const stringerPrice = request.final_price_cents
+  const appFee = Math.round(stringerPrice * (APP_FEE_PERCENT / 100))
+  const totalAmount = stringerPrice + appFee
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,11 +42,16 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
       return
     }
 
+    if (!cardholderName.trim()) {
+      setError('Please enter the cardholder name')
+      return
+    }
+
     setIsProcessing(true)
     setError('')
 
     try {
-      // Create payment method from card element
+      // Create payment method from card element with billing details
       const cardElement = elements.getElement(CardElement)
       if (!cardElement) {
         throw new Error('Card element not found')
@@ -46,6 +60,9 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
+        billing_details: {
+          name: cardholderName.trim(),
+        },
       })
 
       if (pmError) {
@@ -57,7 +74,8 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          payment_method_id: paymentMethod.id
+          payment_method_id: paymentMethod.id,
+          cardholder_name: cardholderName.trim()
         })
       })
 
@@ -91,22 +109,27 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Price Summary */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Quote from {request.stringer.full_name}</span>
-              <CheckCircle className="w-5 h-5 text-green-600" />
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Price Breakdown */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <p className="text-sm text-gray-600 mb-3">Quote from {request.stringer.full_name}</p>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Stringing Service</span>
+                <span className="text-gray-900">{formatPrice(stringerPrice)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Service Fee ({APP_FEE_PERCENT}%)</span>
+                <span className="text-gray-900">{formatPrice(appFee)}</span>
+              </div>
+              <div className="border-t border-gray-300 pt-2 mt-2">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="text-xl font-bold text-green-600">{formatPrice(totalAmount)}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-base font-semibold text-gray-900">Total Amount</span>
-              <span className="text-3xl font-bold text-green-600">
-                {formatPrice(request.final_price_cents)}
-              </span>
-            </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Payment will be held securely until you approve the completed work.
-            </p>
           </div>
 
           {/* Security Notice */}
@@ -115,9 +138,25 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
             <div className="flex-1">
               <p className="text-sm font-medium text-blue-900">Secure Escrow Payment</p>
               <p className="text-xs text-blue-700 mt-1">
-                Your payment is held safely and will only be released to the stringer after you confirm the work is complete. You're protected by Stripe.
+                Your payment is held securely until the stringer completes your racket. Money is released when the work is finished.
               </p>
             </div>
+          </div>
+
+          {/* Cardholder Name */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <User className="w-4 h-4" />
+              Cardholder Name
+            </label>
+            <input
+              type="text"
+              value={cardholderName}
+              onChange={(e) => setCardholderName(e.target.value)}
+              placeholder="Name on card"
+              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+              required
+            />
           </div>
 
           {/* Card Input */}
@@ -169,15 +208,15 @@ function PaymentForm({ request, onSuccess, onCancel }: AuthorizePaymentModalProp
             </Button>
             <Button
               type="submit"
-              disabled={!stripe || isProcessing}
+              disabled={!stripe || isProcessing || !cardholderName.trim()}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
             >
-              {isProcessing ? 'Processing...' : `Pay ${formatPrice(request.final_price_cents)}`}
+              {isProcessing ? 'Processing...' : `Authorize ${formatPrice(totalAmount)}`}
             </Button>
           </div>
 
           <p className="text-xs text-center text-gray-500">
-            By authorizing this payment, you agree to hold {formatPrice(request.final_price_cents)} in escrow until the work is completed.
+            Payment will be held in escrow and released when the stringer completes your racket.
           </p>
         </form>
       </div>

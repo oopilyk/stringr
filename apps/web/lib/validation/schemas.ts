@@ -306,7 +306,8 @@ export const RedoTaskSchema = z.object({
  * Validates payment authorization request
  */
 export const AuthorizePaymentSchema = z.object({
-  payment_method_id: z.string().min(1, 'Payment method is required').max(255)
+  payment_method_id: z.string().min(1, 'Payment method is required').max(255),
+  cardholder_name: z.string().min(1, 'Cardholder name is required').max(100)
 }).strict()
 
 /**

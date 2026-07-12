@@ -85,25 +85,29 @@ export function Step4Pricing({ register, errors, setValue, watch }: Step4Pricing
         <p className="mt-1 text-xs text-gray-500"><span className="font-bold">Labor only.</span> String costs are added separately.</p>
       </div>
 
-      {/* Turnaround Time */}
+      {/* Minimum Completion Time */}
       <div>
         <label htmlFor="turnaround_hours" className="block text-sm font-medium text-gray-700 mb-1">
-          Predicted Turnaround Time (without rush) *
+          Minimum Completion Time *
         </label>
         <select
           id="turnaround_hours"
-          {...register('turnaround_hours', { required: 'Turnaround time is required', valueAsNumber: true })}
+          {...register('turnaround_hours', { required: 'Minimum completion time is required', valueAsNumber: true })}
           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
         >
           <option value="">Select...</option>
           <option value="6">6 hours (same day)</option>
           <option value="12">12 hours (same day)</option>
-          <option value="24">24 hours (next day)</option>
+          <option value="24">24 hours (1 day)</option>
           <option value="48">48 hours (2 days)</option>
           <option value="72">72 hours (3 days)</option>
-          <option value="168">1 week</option>
+          <option value="96">4 days</option>
+          <option value="120">5 days</option>
+          <option value="144">6 days</option>
+          <option value="168">7 days</option>
         </select>
         {errors.turnaround_hours && <p className="mt-1 text-sm text-red-600">{errors.turnaround_hours.message}</p>}
+        <p className="mt-1 text-xs text-gray-500">This is the minimum time you expect to complete an average racket. Players will see this as the earliest they can expect their racket back.</p>
       </div>
 
       {/* Accept Rush Orders */}

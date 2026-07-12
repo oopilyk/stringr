@@ -151,14 +151,14 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
             style={{ objectPosition: 'center', aspectRatio: '1/1' }}
           />
         ) : (
-          <div
-            className="rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-4 border-gray-200"
-            style={{ width: size, height: size }}
-          >
-            <span className="text-white text-4xl font-bold">
-              {userId.substring(0, 2).toUpperCase()}
-            </span>
-          </div>
+          <Image
+            src="/default-avatar.png"
+            alt="Default avatar"
+            width={size}
+            height={size}
+            className="rounded-full object-cover border-4 border-gray-200"
+            style={{ objectPosition: 'center', aspectRatio: '1/1' }}
+          />
         )}
 
         {/* Camera Overlay */}

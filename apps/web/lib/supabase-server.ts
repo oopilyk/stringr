@@ -1,4 +1,5 @@
 import { createServerClient as createSSRServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export const createServerClient = () => {
@@ -13,6 +14,25 @@ export const createServerClient = () => {
           return cookieStore.get(name)?.value
         },
       },
+    }
+  )
+}
+
+// Service role client that bypasses RLS - use only for trusted server-side operations
+export const createServiceRoleClient = () => {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+  }
+
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
     }
   )
 }

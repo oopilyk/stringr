@@ -1,7 +1,8 @@
 import { createServerClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { capturePayment } from '@/lib/stripe/server'
 
-// POST /api/requests/[id]/mark-ready - Mark request as ready for pickup
+// POST /api/requests/[id]/mark-ready - Mark request as ready for pickup and capture payment
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -23,10 +24,10 @@ export async function POST(
       return NextResponse.json({ error: 'Completion photo is required' }, { status: 400 })
     }
 
-    // Verify user is the stringer
+    // Verify user is the stringer and get request details for gallery
     const { data: req, error: reqError } = await supabase
       .from('requests')
-      .select('stringer_id, status, player_id')
+      .select('stringer_id, status, player_id, payment_intent_id, payment_captured_at, string_selection, tension_mains_lbs, tension_crosses_lbs')
       .eq('id', params.id)
       .single()
 
@@ -34,43 +35,26 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Verify request is accepted or in_progress
-    if (req.status !== 'in_progress' && req.status !== 'accepted') {
-      return NextResponse.json({ error: 'Request must be accepted or in progress' }, { status: 400 })
+    // Verify request is in_progress (stringer must have started work)
+    if (req.status !== 'in_progress') {
+      return NextResponse.json({ error: 'Request must be in progress to mark as ready' }, { status: 400 })
     }
 
-    // Verify all required tasks are completed
-    const REQUIRED_TASKS = [
-      'receive_racket',
-      'remove_strings',
-      'mount_racket',
-      'string_mains',
-      'string_crosses',
-      'tie_off',
-      'final_inspection'
-    ]
-
-    const { data: tasks, error: tasksError } = await supabase
-      .from('stringing_tasks')
-      .select('task_type, status')
-      .eq('request_id', params.id)
-
-    if (tasksError) {
-      console.error('Tasks fetch error:', tasksError)
-      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
-    }
-
-    // Check if all required tasks are completed
-    const completedTasks = tasks?.filter(t => t.status === 'completed').map(t => t.task_type) || []
-    const missingTasks = REQUIRED_TASKS.filter(rt => !completedTasks.includes(rt))
-
-    if (missingTasks.length > 0) {
-      console.error('Missing tasks:', missingTasks)
-      return NextResponse.json({
-        error: 'All required tasks must be completed',
-        missingTasks: missingTasks,
-        completedTasks: completedTasks
-      }, { status: 400 })
+    // CAPTURE PAYMENT - Release funds to stringer when work is complete
+    let paymentCapturedAt = req.payment_captured_at
+    if (req.payment_intent_id && !req.payment_captured_at) {
+      try {
+        console.log(`[Mark Ready] Capturing payment: ${req.payment_intent_id}`)
+        await capturePayment(req.payment_intent_id)
+        paymentCapturedAt = new Date().toISOString()
+        console.log('[Mark Ready] Payment captured successfully')
+      } catch (paymentError: any) {
+        console.error('[Mark Ready] Payment capture failed:', paymentError.message)
+        return NextResponse.json({
+          error: 'Failed to process payment. Please try again or contact support.',
+          code: 'payment_capture_failed'
+        }, { status: 500 })
+      }
     }
 
     // Update request to ready_for_pickup
@@ -82,7 +66,8 @@ export async function POST(
         ready_at: now,
         completion_notes,
         completion_photo_url,
-        actual_string_installed
+        actual_string_installed,
+        payment_captured_at: paymentCapturedAt
       })
       .eq('id', params.id)
 
@@ -99,16 +84,60 @@ export async function POST(
         from_status: req.status,
         to_status: 'ready_for_pickup',
         changed_by: user.id,
-        metadata: { completion_notes }
+        metadata: {
+          completion_notes,
+          payment_captured: !!paymentCapturedAt,
+          payment_intent_id: req.payment_intent_id
+        }
       })
 
-    // TODO: Send notification to player
-    // await sendNotification(req.player_id, {
-    //   type: 'request_ready',
-    //   title: 'Your Racket is Ready!',
-    //   body: 'Pick up your freshly strung racket',
-    //   data: { request_id: params.id }
-    // })
+    // Add completion photo to stringer's racket gallery
+    try {
+      // Get current gallery count for display_order
+      const { count } = await supabase
+        .from('racket_gallery')
+        .select('*', { count: 'exact', head: true })
+        .eq('stringer_id', user.id)
+
+      // Prepare string information from the request
+      const stringSelection = req.string_selection as any
+      const stringInfo = stringSelection?.brand && stringSelection?.brand !== 'Player Provided'
+        ? `${stringSelection.brand} ${stringSelection.model || ''} ${stringSelection.gauge || ''}`.trim()
+        : null
+
+      // Calculate average tension
+      const avgTension = req.tension_mains_lbs && req.tension_crosses_lbs
+        ? Math.round((req.tension_mains_lbs + req.tension_crosses_lbs) / 2)
+        : null
+
+      // Generate caption with stringing details
+      let caption = 'Completed stringing job'
+      if (stringSelection?.brand === 'Player Provided') {
+        caption += ' - Player provided string'
+      } else if (stringInfo) {
+        caption += ` - ${stringInfo}`
+      }
+      if (avgTension) {
+        caption += ` @ ${avgTension} lbs`
+      }
+
+      // Insert into racket gallery
+      await supabase
+        .from('racket_gallery')
+        .insert({
+          stringer_id: user.id,
+          image_url: completion_photo_url,
+          caption: caption,
+          string_used: stringInfo,
+          tension_lbs: avgTension,
+          display_order: count || 0,
+        })
+
+      console.log('[Mark Ready] Added completion photo to racket gallery')
+    } catch (galleryError) {
+      // Don't fail the request if gallery addition fails
+      console.error('[Mark Ready] Error adding to racket gallery:', galleryError)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

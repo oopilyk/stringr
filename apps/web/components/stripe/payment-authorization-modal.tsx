@@ -31,8 +31,12 @@ function PaymentForm({
   const [error, setError] = useState<string | null>(null)
 
   // Calculate fee breakdown
-  const platformFeeCents = Math.round(quotedPriceCents * 0.12)
-  const stringerEarningsCents = quotedPriceCents - platformFeeCents
+  // quotedPriceCents is the stringer's listed price
+  const stringerPriceCents = quotedPriceCents
+  const appTaxCents = Math.round(stringerPriceCents * 0.05) // 5% app tax
+  const playerTotalCents = stringerPriceCents + appTaxCents
+  const stringerFeeCents = Math.round(stringerPriceCents * 0.12) // 12% stringer fee
+  const stringerEarningsCents = stringerPriceCents - stringerFeeCents
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,27 +84,27 @@ function PaymentForm({
       {/* Price Breakdown */}
       <div className="bg-gray-50 rounded-lg p-4 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Job Total</span>
-          <span className="font-medium">{formatCurrency(quotedPriceCents)}</span>
+          <span className="text-gray-600">Stringing Service</span>
+          <span className="font-medium">{formatCurrency(stringerPriceCents)}</span>
         </div>
         <div className="flex justify-between text-xs text-gray-500">
-          <span>Platform fee (12%)</span>
-          <span>{formatCurrency(platformFeeCents)}</span>
-        </div>
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{stringerName} receives</span>
-          <span>{formatCurrency(stringerEarningsCents)}</span>
+          <span>Service fee (5%)</span>
+          <span>{formatCurrency(appTaxCents)}</span>
         </div>
         <div className="pt-2 border-t border-gray-200 flex justify-between">
-          <span className="font-semibold">Amount to Authorize</span>
-          <span className="font-semibold text-lg">{formatCurrency(quotedPriceCents)}</span>
+          <span className="font-semibold">Total to Pay</span>
+          <span className="font-semibold text-lg">{formatCurrency(playerTotalCents)}</span>
+        </div>
+        <div className="flex justify-between text-xs text-gray-500 pt-1">
+          <span>{stringerName} receives</span>
+          <span>{formatCurrency(stringerEarningsCents)}</span>
         </div>
       </div>
 
       {/* Important Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Note:</strong> Your card will be authorized for {formatCurrency(quotedPriceCents)}, but you won't be charged until you approve the completed work.
+          <strong>Note:</strong> Your card will be authorized for {formatCurrency(playerTotalCents)}, but you won't be charged until you approve the completed work.
         </p>
       </div>
 

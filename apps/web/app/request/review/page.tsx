@@ -33,6 +33,9 @@ interface RequestData {
   special_instructions?: string
   preferred_completion_date?: string
   estimated_price_cents: number
+  is_rush?: boolean
+  rush_fee_cents?: number
+  base_price_cents?: number
 }
 
 function ReviewRequestContent() {
@@ -211,14 +214,56 @@ function ReviewRequestContent() {
             {requestData.preferred_completion_date && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Preferred Completion Date</h3>
-                <p className="text-base text-gray-900">
-                  {new Date(requestData.preferred_completion_date).toLocaleDateString()}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-base text-gray-900">
+                    {new Date(requestData.preferred_completion_date).toLocaleDateString()}
+                  </p>
+                  {requestData.is_rush && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-700">
+                      ⚡ RUSH
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Price */}
-            <div className="pt-4 border-t border-gray-200">
+            {/* Rush Order Banner */}
+            {requestData.is_rush && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚡</span>
+                  <div>
+                    <p className="font-semibold text-amber-900">Rush Order</p>
+                    <p className="text-sm text-amber-700">
+                      Your request will be prioritized at the top of the queue
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Price Breakdown */}
+            <div className="pt-4 border-t border-gray-200 space-y-2">
+              {/* Show breakdown if we have it */}
+              {requestData.base_price_cents && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Labor</span>
+                    <span className="text-gray-900">{formatPrice(requestData.base_price_cents)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">String</span>
+                    <span className="text-gray-900">{formatPrice(requestData.string_selection.price_cents)}</span>
+                  </div>
+                  {requestData.is_rush && requestData.rush_fee_cents && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-amber-600 font-medium">⚡ Rush Fee</span>
+                      <span className="text-amber-600 font-medium">+{formatPrice(requestData.rush_fee_cents)}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-gray-100"></div>
+                </>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium text-gray-900">Estimated Total</span>
                 <span className="text-2xl font-bold text-primary">

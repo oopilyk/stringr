@@ -1,5 +1,6 @@
 -- Function to authorize payment and update request
 -- This bypasses RLS and allows the payment authorization flow to work
+-- NOTE: Status stays 'accepted' - stringer must explicitly start work
 CREATE OR REPLACE FUNCTION authorize_request_payment(
   p_request_id UUID,
   p_player_id UUID,
@@ -28,23 +29,24 @@ BEGIN
     RAISE EXCEPTION 'Request not found, not in accepted status, or payment already authorized';
   END IF;
 
-  -- Update the request with payment info and transition to in_progress
+  -- Update the request with payment info ONLY - do NOT change status or start work
+  -- Status stays 'accepted' until stringer explicitly starts work
   UPDATE requests
   SET
     payment_intent_id = p_payment_intent_id,
     payment_authorized_at = NOW(),
     platform_fee_cents = p_platform_fee_cents,
     stringer_earnings_cents = p_stringer_earnings_cents,
-    status = 'in_progress',
-    work_started_at = NOW(),
     updated_at = NOW()
+    -- NOTE: status stays 'accepted', work_started_at stays NULL
   WHERE id = p_request_id;
 
   -- Return the updated request
   SELECT json_build_object(
     'success', true,
     'request_id', p_request_id,
-    'status', 'in_progress',
+    'status', 'accepted',
+    'payment_authorized', true,
     'payment_intent_id', p_payment_intent_id
   ) INTO v_result;
 
@@ -56,4 +58,4 @@ $$;
 GRANT EXECUTE ON FUNCTION authorize_request_payment TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION authorize_request_payment IS 'Authorizes payment for a request and transitions it to in_progress status. Bypasses RLS to allow payment fields to be updated.';
+COMMENT ON FUNCTION authorize_request_payment IS 'Authorizes payment for a request. Status stays accepted until stringer starts work.';

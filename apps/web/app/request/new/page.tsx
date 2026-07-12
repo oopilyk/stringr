@@ -35,6 +35,7 @@ interface StringerSettings {
   max_tension: number
   base_price_cents: number
   turnaround_hours: number
+  accepts_rush?: boolean
   rush_fee_cents: number
   rush_turnaround_hours?: number
   accepting_requests: boolean
@@ -145,13 +146,16 @@ function NewRequestForm() {
 
     // MVP: No additional service costs - restring only
 
-    // Check for rush service using rush_turnaround_hours threshold
-    if (preferredDate && stringerSettings.rush_turnaround_hours) {
-      const minDate = new Date()
-      minDate.setHours(minDate.getHours() + stringerSettings.rush_turnaround_hours)
-      const requestedDate = new Date(preferredDate)
+    // Check for rush service - use rush_turnaround_hours or default to 24 hours
+    if (preferredDate && stringerSettings.accepts_rush) {
+      const rushHours = Number(stringerSettings.rush_turnaround_hours) || 24
 
-      if (requestedDate < minDate) {
+      // Calculate the rush threshold date (just the date, ignoring time)
+      const rushThreshold = new Date(Date.now() + rushHours * 60 * 60 * 1000)
+      const rushThresholdDate = rushThreshold.toISOString().split('T')[0]
+
+      // Compare dates only - if preferred date is on or before rush threshold date, it's rush
+      if (preferredDate <= rushThresholdDate) {
         total += stringerSettings.rush_fee_cents || 0
       }
     }
@@ -160,13 +164,17 @@ function NewRequestForm() {
   }
 
   const isRushOrder = () => {
-    if (!preferredDate || !stringerSettings?.rush_turnaround_hours) return false
+    if (!preferredDate || !stringerSettings?.accepts_rush) return false
 
-    const minDate = new Date()
-    minDate.setHours(minDate.getHours() + stringerSettings.rush_turnaround_hours)
-    const requestedDate = new Date(preferredDate)
+    // Use rush_turnaround_hours or default to 24 hours
+    const rushHours = Number(stringerSettings.rush_turnaround_hours) || 24
 
-    return requestedDate < minDate
+    // Calculate the rush threshold date (just the date, ignoring time)
+    const rushThreshold = new Date(Date.now() + rushHours * 60 * 60 * 1000)
+    const rushThresholdDate = rushThreshold.toISOString().split('T')[0]
+
+    // Compare dates only - if preferred date is on or before rush threshold date, it's rush
+    return preferredDate <= rushThresholdDate
   }
 
   const handleNext = () => {
@@ -205,6 +213,7 @@ function NewRequestForm() {
     }
 
     // Save to localStorage and navigate to review
+    const rushOrder = isRushOrder()
     const requestData = {
       stringer_id: stringerId,
       racket_photo_url: racketPhotoUrl,
@@ -222,6 +231,10 @@ function NewRequestForm() {
       preferred_completion_date: preferredDate || null,
       estimated_price_cents: calculateEstimatedPrice(),
       stringer_name: stringerProfile?.full_name || 'Stringer',
+      // Rush order data
+      is_rush: rushOrder,
+      rush_fee_cents: rushOrder ? (stringerSettings?.rush_fee_cents || 0) : 0,
+      base_price_cents: stringerSettings?.base_price_cents || 0,
     }
 
     localStorage.setItem('pending_request', JSON.stringify(requestData))
@@ -642,31 +655,162 @@ function NewRequestForm() {
             </p>
           </div>
 
-          {/* Preferred Date */}
+          {/* Completion Time Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
-              Preferred Completion Date (Optional)
+              When do you need it done?
             </label>
-            <input
-              type="date"
-              value={preferredDate}
-              onChange={(e) => setPreferredDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Standard turnaround: {stringerSettings?.turnaround_hours} hours
-            </p>
 
-            {/* Rush Fee Warning */}
+            {/* Turnaround Options */}
+            <div className="space-y-3">
+              {/* Standard Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  // Set date to standard turnaround time
+                  const standardDate = new Date()
+                  standardDate.setHours(standardDate.getHours() + (stringerSettings?.turnaround_hours || 96))
+                  setPreferredDate(standardDate.toISOString().split('T')[0])
+                }}
+                className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                  preferredDate && !isRushOrder()
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      preferredDate && !isRushOrder() ? 'bg-green-100' : 'bg-gray-100'
+                    }`}>
+                      <span className="text-lg">📅</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Standard Turnaround</p>
+                      <p className="text-sm text-gray-500">
+                        Ready within {stringerSettings?.turnaround_hours || 96} hours
+                        {stringerSettings?.turnaround_hours && (
+                          <span className="text-gray-400"> (~{Math.ceil((stringerSettings.turnaround_hours) / 24)} days)</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-green-600">Included</p>
+                    <p className="text-xs text-gray-500">No extra fee</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Rush Option - Show if stringer accepts rush (default to 24hr threshold if not configured) */}
+              {stringerSettings?.accepts_rush && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Set date based on rush turnaround hours
+                    const rushHours = Number(stringerSettings?.rush_turnaround_hours) || 24
+                    const rushDate = new Date(Date.now() + rushHours * 60 * 60 * 1000)
+                    setPreferredDate(rushDate.toISOString().split('T')[0])
+                  }}
+                  className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                    isRushOrder()
+                      ? 'border-amber-500 bg-amber-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isRushOrder() ? 'bg-amber-100' : 'bg-gray-100'
+                      }`}>
+                        <span className="text-lg">⚡</span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Rush Order</p>
+                        <p className="text-sm text-gray-500">
+                          Ready within {stringerSettings.rush_turnaround_hours || 24} hours
+                          {(stringerSettings.rush_turnaround_hours || 24) < 24 && (
+                            <span className="text-amber-600 font-medium"> (Same day)</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-amber-600">
+                        +${((stringerSettings?.rush_fee_cents || 0) / 100).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">Rush fee</p>
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {/* Flexible / No Rush Option */}
+              <button
+                type="button"
+                onClick={() => setPreferredDate('')}
+                className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                  !preferredDate
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      !preferredDate ? 'bg-blue-100' : 'bg-gray-100'
+                    }`}>
+                      <span className="text-lg">🤝</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">I'm Flexible</p>
+                      <p className="text-sm text-gray-500">
+                        Let the stringer work at their pace
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-blue-600">Included</p>
+                    <p className="text-xs text-gray-500">No extra fee</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Custom Date Option */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const customDateInput = document.getElementById('custom-date-input')
+                    if (customDateInput) customDateInput.focus()
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  Or choose a specific date...
+                </button>
+                <input
+                  id="custom-date-input"
+                  type="date"
+                  value={preferredDate}
+                  onChange={(e) => setPreferredDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Rush Order Summary */}
             {isRushOrder() && stringerSettings?.rush_fee_cents && (
-              <div className="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 text-lg">⚡</span>
-                  <div>
-                    <p className="text-sm font-medium text-amber-900">Rush Order Fee Applied</p>
-                    <p className="text-xs text-amber-700 mt-1">
-                      Completion within {stringerSettings.rush_turnaround_hours} hours requires a rush fee of ${(stringerSettings.rush_fee_cents / 100).toFixed(2)}
+              <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">⚡</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-amber-900">Rush Order Confirmed</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Your request will be prioritized and placed at the top of the stringr's queue. 
+                      Rush fee of <span className="font-bold">${(stringerSettings.rush_fee_cents / 100).toFixed(2)}</span> added.
                     </p>
                   </div>
                 </div>

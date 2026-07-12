@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // 4. AUTHORIZATION - Verify stringer exists and is accepting requests
     const { data: stringerSettings, error: stringerError } = await supabase
       .from('stringer_settings')
-      .select('accepting_requests, string_inventory, dropoff_methods, max_tension, flexible_availability, availability')
+      .select('accepting_requests, string_inventory, dropoff_methods, max_tension, flexible_availability, availability, rush_turnaround_hours, accepts_rush')
       .eq('id', data.stringer_id)
       .single()
 
@@ -127,6 +127,20 @@ export async function POST(request: NextRequest) {
     }
 
     // 9. DATABASE OPERATION - Create the request
+    // Determine if this is a rush order based on preferred completion date
+    let isRush = false
+    if (stringerSettings.accepts_rush && data.preferred_completion_date) {
+      // Default to 24 hours if rush_turnaround_hours is not set
+      const rushHours = Number(stringerSettings.rush_turnaround_hours) || 24
+
+      // Calculate the rush threshold date (just the date, ignoring time)
+      const rushThreshold = new Date(Date.now() + rushHours * 60 * 60 * 1000)
+      const rushThresholdDate = rushThreshold.toISOString().split('T')[0]
+
+      // Compare dates only - if preferred date is on or before rush threshold date, it's rush
+      isRush = data.preferred_completion_date <= rushThresholdDate
+    }
+
     const { data: newRequest, error: insertError } = await supabase
       .from('requests')
       .insert({
@@ -144,6 +158,7 @@ export async function POST(request: NextRequest) {
         special_instructions: data.special_instructions || null,
         preferred_completion_date: data.preferred_completion_date || null,
         estimated_price_cents: data.estimated_price_cents,
+        is_rush: isRush,
       })
       .select('id')
       .single()

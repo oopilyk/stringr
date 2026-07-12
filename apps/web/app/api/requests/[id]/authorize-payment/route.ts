@@ -63,7 +63,7 @@ export async function POST(
       )
     }
 
-    const { payment_method_id } = validation.data
+    const { payment_method_id, cardholder_name } = validation.data
 
     // 5. AUTHORIZATION - Get request and verify ownership
     const { data: req, error: reqError } = await supabase
@@ -132,15 +132,17 @@ export async function POST(
 
     // 11. PAYMENT AUTHORIZATION - Create Stripe PaymentIntent
     // This is a Stripe API call - errors are caught and sanitized
+    // Note: final_price_cents is the stringer's listed price, player pays this + app tax
     let paymentResult
     try {
       paymentResult = await authorizePayment({
-        amount_cents: req.final_price_cents,
+        stringer_price_cents: req.final_price_cents,
         player_id: user.id,
         stringer_account_id: stringerSettings.stripe_account_id,
         request_id: params.id,
         payment_method_id: payment_method_id,
-        description: `Stringing service for request #${params.id.slice(0, 8)}`
+        cardholder_name: cardholder_name,
+        description: 'Stringerly - Racket Stringing Service'
       })
     } catch (stripeError: any) {
       // Sanitize Stripe errors - don't leak sensitive info
@@ -170,47 +172,14 @@ export async function POST(
       )
     }
 
-    // 13. TASK INITIALIZATION - Create stringing workflow tasks
-    const { error: tasksError } = await supabase
-      .rpc('initialize_stringing_tasks', { p_request_id: params.id })
-
-    if (tasksError) {
-      console.error('Task initialization error:', tasksError)
-      // Non-critical error - tasks can be created later
-      // Fallback: create tasks manually
-      const taskTypes = [
-        'receive_racket',
-        'remove_strings',
-        'inspect_frame',
-        'mount_racket',
-        'string_mains',
-        'string_crosses',
-        'tie_off',
-        'final_inspection',
-        'completion_photo'
-      ]
-
-      for (let i = 0; i < taskTypes.length; i++) {
-        await supabase
-          .from('stringing_tasks')
-          .insert({
-            request_id: params.id,
-            task_type: taskTypes[i],
-            status: 'pending',
-            task_order: i + 1,
-            is_required: !['inspect_frame', 'completion_photo'].includes(taskTypes[i])
-          })
-          .then(() => {}, () => {}) // Ignore errors - tasks might exist
-      }
-    }
-
-    // 14. AUDIT LOGGING - Record state transition
+    // 13. AUDIT LOGGING - Record payment authorization (status stays 'accepted')
+    // Tasks will be created when stringer starts work
     await supabase
       .from('request_state_changes')
       .insert({
         request_id: params.id,
         from_status: 'accepted',
-        to_status: 'in_progress',
+        to_status: 'accepted', // Status stays accepted until stringer starts work
         changed_by: user.id,
         metadata: {
           payment_authorized: true,
@@ -222,9 +191,16 @@ export async function POST(
     return NextResponse.json({
       success: true,
       payment_intent_id: paymentResult.payment_intent_id,
-      amount_cents: req.final_price_cents,
+      // Stringer's listed price
+      stringer_price_cents: paymentResult.stringer_price_cents,
+      // What player actually pays (stringer price + app tax)
+      player_total_cents: paymentResult.player_total_cents,
+      // What stringer receives (their price - fee)
+      stringer_earnings_cents: paymentResult.stringer_earnings_cents,
+      // Platform revenue breakdown
       platform_fee_cents: paymentResult.platform_fee_cents,
-      stringer_earnings_cents: paymentResult.stringer_earnings_cents
+      stringer_fee_cents: paymentResult.stringer_fee_cents,
+      player_app_tax_cents: paymentResult.player_app_tax_cents
     })
 
   } catch (error: any) {

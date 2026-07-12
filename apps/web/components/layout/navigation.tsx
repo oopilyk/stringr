@@ -184,17 +184,11 @@ export function Navigation() {
                     className="flex items-center hover:opacity-80 transition-opacity"
                   >
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-gray-200">
-                      {profile.avatar_url ? (
-                        <img
-                          src={profile.avatar_url}
-                          alt={profile.full_name || 'User'}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg font-semibold text-primary">
-                          {profile.full_name?.[0] || 'U'}
-                        </span>
-                      )}
+                      <img
+                        src={profile.avatar_url || '/default-avatar.png'}
+                        alt={profile.full_name || 'User'}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   </Link>
                   <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -272,17 +266,11 @@ export function Navigation() {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-gray-200">
-                    {profile.avatar_url ? (
-                      <img
-                        src={profile.avatar_url}
-                        alt={profile.full_name || 'User'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-lg font-semibold text-primary">
-                        {profile.full_name?.[0] || 'U'}
-                      </span>
-                    )}
+                    <img
+                      src={profile.avatar_url || '/default-avatar.png'}
+                      alt={profile.full_name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{profile.full_name || 'User'}</p>
