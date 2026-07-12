@@ -45,18 +45,12 @@ export function ProfileHeader({
             size={128}
           />
         ) : (
-          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-4 border-gray-200 overflow-hidden">
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name || 'User'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-4xl font-bold">
-                {(profile.full_name || userEmail || 'U')?.substring(0, 2).toUpperCase()}
-              </span>
-            )}
+          <div className="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center border-4 border-gray-200 overflow-hidden">
+            <img
+              src={profile.avatar_url || '/default-avatar.png'}
+              alt={profile.full_name || 'User'}
+              className="w-full h-full object-cover"
+            />
           </div>
         )}
 

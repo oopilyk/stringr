@@ -1,6 +1,6 @@
 import { Star, Clock, DollarSign, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader } from "./ui/card"
-import { cn, formatPrice, formatPriceValue, formatDuration, formatDistance } from "../lib/utils"
+import { cn, formatPrice, formatPriceValue, formatDuration, formatDistance, formatLocation } from "../lib/utils"
 import type { StringerSearchResult } from "@stringerly/types"
 
 interface StringerCardProps {
@@ -23,23 +23,17 @@ export function StringerCard({ stringer, onViewProfile, className }: StringerCar
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-              {stringer.avatar_url ? (
-                <img
-                  src={stringer.avatar_url}
-                  alt={stringer.full_name || 'Stringer'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-lg font-semibold text-primary">
-                  {stringer.full_name?.[0] || 'S'}
-                </span>
-              )}
+              <img
+                src={stringer.avatar_url || '/default-avatar.png'}
+                alt={stringer.full_name || 'Stringer'}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <h3 className="font-semibold text-lg">{stringer.full_name}</h3>
               <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                 <MapPin className="w-3 h-3" />
-                <span>{stringer.city}</span>
+                <span>{formatLocation(stringer.city, settings.show_town_only)}</span>
                 {typeof stringer.distance_km === 'number' && (
                   <>
                     <span>•</span>
@@ -81,7 +75,7 @@ export function StringerCard({ stringer, onViewProfile, className }: StringerCar
               <Clock className="w-4 h-4" />
               <span>{formatDuration(settings.turnaround_hours)}</span>
             </div>
-            <p className="text-xs text-muted-foreground">Turnaround</p>
+            <p className="text-xs text-muted-foreground">Min. time</p>
           </div>
           
           <div className="text-center">

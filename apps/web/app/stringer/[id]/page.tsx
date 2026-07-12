@@ -8,8 +8,9 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import { Navigation } from '@/components/layout/navigation'
 import { Button } from '@stringerly/ui'
 import { CreateRequestDialog } from '@/components/requests/create-request-dialog'
-import { Star, MapPin, Clock, DollarSign, Check, MessageSquare, Grid, Award } from 'lucide-react'
-import { formatPrice, formatDuration, formatTimeRange } from '@stringerly/ui'
+import { Star, MapPin, Clock, DollarSign, Check, MessageSquare, Grid, Award, Flag } from 'lucide-react'
+import { ReportUserModal } from '@/components/reports/report-user-modal'
+import { formatPrice, formatDuration, formatTimeRange, formatLocation } from '@stringerly/ui'
 import type { StringerSearchResult } from '@stringerly/types'
 
 export default function StringerProfileViewPage() {
@@ -21,6 +22,7 @@ export default function StringerProfileViewPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false)
   const [reviews, setReviews] = useState<any[]>([])
+  const [showReportModal, setShowReportModal] = useState(false)
 
   useEffect(() => {
     if (params.id) {
@@ -388,18 +390,12 @@ export default function StringerProfileViewPage() {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Avatar */}
             <div className="flex-shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-primary/10 flex items-center justify-center">
-                {stringer.avatar_url ? (
-                  <img
-                    src={stringer.avatar_url}
-                    alt={stringer.full_name || 'Stringer'}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-5xl md:text-6xl font-bold text-primary">
-                    {stringer.full_name?.[0] || 'S'}
-                  </span>
-                )}
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                <img
+                  src={stringer.avatar_url || '/default-avatar.png'}
+                  alt={stringer.full_name || 'Stringer'}
+                  className="w-full h-full rounded-full object-cover"
+                />
               </div>
             </div>
 
@@ -458,7 +454,7 @@ export default function StringerProfileViewPage() {
               {/* Location */}
               <div className="flex items-center space-x-2 text-gray-600 mb-4">
                 <MapPin className="w-4 h-4" />
-                <span>{stringer.city}</span>
+                <span>{formatLocation(stringer.city, settings?.show_town_only)}</span>
               </div>
 
               {/* Bio */}
@@ -523,6 +519,19 @@ export default function StringerProfileViewPage() {
                   Message
                 </Button>
               </div>
+
+              {/* Report User Link */}
+              {currentUser && currentUser.id !== params.id && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="inline-flex items-center text-xs text-gray-500 hover:text-red-600 transition-colors"
+                  >
+                    <Flag className="w-3 h-3 mr-1" />
+                    Report this user
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -546,7 +555,7 @@ export default function StringerProfileViewPage() {
                 <Clock className="w-5 h-5" />
                 <span>{formatDuration(settings.turnaround_hours)}</span>
               </div>
-              <p className="text-sm text-gray-600">Turnaround</p>
+              <p className="text-sm text-gray-600">Min. time</p>
             </div>
 
             <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -554,7 +563,9 @@ export default function StringerProfileViewPage() {
                 {settings.accepts_rush ? '⚡ Rush Available' : '📅 Standard Only'}
               </div>
               <p className="text-sm text-gray-600">
-                {settings.accepts_rush ? `+${formatPrice(settings.rush_fee_cents)}` : 'No rush'}
+                {settings.accepts_rush
+                  ? `+${formatPrice(settings.rush_fee_cents)}${settings.rush_turnaround_hours ? ` • ${settings.rush_turnaround_hours}h` : ''}`
+                  : 'No rush'}
               </p>
             </div>
           </div>
@@ -567,7 +578,7 @@ export default function StringerProfileViewPage() {
           )}
 
           {/* Bulk Discount */}
-          {settings.discount_bulk_jobs && settings.discount_bulk_jobs > 0 && (
+          {settings.discount_bulk_jobs > 0 && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-900"><span className="font-semibold">Bulk Discount:</span> {settings.discount_bulk_jobs}% off for 3+ rackets</p>
             </div>
@@ -813,19 +824,11 @@ export default function StringerProfileViewPage() {
                 <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
                   <div className="flex items-center justify-between mb-2">
                     <Link href={`/stringer/${review.reviewer_id}`} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                      {review.reviewer?.avatar_url ? (
-                        <img
-                          src={review.reviewer.avatar_url}
-                          alt={review.reviewer.full_name || 'Reviewer'}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-sm font-semibold">
-                            {review.reviewer?.full_name?.[0] || 'U'}
-                          </span>
-                        </div>
-                      )}
+                      <img
+                        src={review.reviewer?.avatar_url || '/default-avatar.png'}
+                        alt={review.reviewer?.full_name || 'Reviewer'}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
                       <span className="font-semibold text-gray-900">
                         {review.reviewer?.full_name || 'Anonymous'}
                       </span>
@@ -870,6 +873,15 @@ export default function StringerProfileViewPage() {
             setIsRequestDialogOpen(false)
             router.push('/dashboard')
           }}
+        />
+      )}
+
+      {/* Report User Modal */}
+      {showReportModal && stringer && (
+        <ReportUserModal
+          reportedUserId={stringer.id}
+          reportedUserName={stringer.full_name || 'This user'}
+          onClose={() => setShowReportModal(false)}
         />
       )}
     </div>

@@ -245,14 +245,63 @@ export default function StringerSignupPage() {
     setMessage('')
 
     try {
-      // Final update to mark onboarding complete
-      await supabase
+      const data = getValues()
+
+      // Save all profile data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: data.full_name,
+          phone: data.phone,
+          city: data.city,
+          lat: data.lat,
+          lng: data.lng,
+          bio: data.bio,
+          years_experience: data.years_experience,
+          rackets_strung_count: data.rackets_strung_count,
+          certifications: data.certifications || [],
+          stringing_location: data.stringing_location,
+          player_levels_served: data.player_levels_served || [],
+        })
+        .eq('id', userId)
+
+      if (profileError) {
+        console.error('Error saving profile:', profileError)
+        setMessage('Failed to save profile data')
+        return
+      }
+
+      // Save all stringer settings and mark onboarding complete
+      const { error: settingsError } = await supabase
         .from('stringer_settings')
         .update({
+          machine_brand: data.machine_brand,
+          machine_model: data.machine_model,
+          machine_type: data.machine_type,
+          supported_racket_types: data.supported_racket_types || [],
+          max_tension: data.max_tension,
+          base_price_cents: data.base_price_cents,
+          turnaround_hours: data.turnaround_hours,
+          accepts_rush: data.accepts_rush,
+          rush_fee_cents: data.rush_fee_cents,
+          rush_turnaround_hours: data.rush_turnaround_hours,
+          discount_bulk_jobs: data.discount_bulk_jobs,
+          pricing_notes: data.pricing_notes,
+          string_inventory: data.string_inventory || [],
+          accepts_player_strings: data.accepts_player_strings,
+          dropoff_methods: data.dropoff_methods || [],
+          availability: data.availability || [],
+          flexible_availability: data.flexible_availability,
           onboarding_step: 7,
           onboarding_completed_at: new Date().toISOString(),
         })
         .eq('id', userId)
+
+      if (settingsError) {
+        console.error('Error saving settings:', settingsError)
+        setMessage('Failed to save settings')
+        return
+      }
 
       // Clear saved progress
       clearProgress()

@@ -94,6 +94,7 @@ async function saveToDatabase(
         turnaround_hours: data.turnaround_hours,
         accepts_rush: data.accepts_rush,
         rush_fee_cents: data.rush_fee_cents,
+        rush_turnaround_hours: data.rush_turnaround_hours,
         max_daily_jobs: data.max_daily_jobs,
         machine_brand: data.machine_brand,
         machine_model: data.machine_model,

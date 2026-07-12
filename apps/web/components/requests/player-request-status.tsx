@@ -5,15 +5,6 @@ import { createClient } from '@/lib/supabase'
 import { Button, formatPrice } from '@stringerly/ui'
 import { Check, Clock, Package, Loader2, MessageSquare, CheckCircle, DollarSign } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-
-interface StringingTask {
-  id: string
-  task_type: string
-  status: string
-  completed_at: string | null
-}
-
 interface Request {
   id: string
   status: string
@@ -39,67 +30,34 @@ interface Stringer {
 interface PlayerRequestStatusProps {
   request: Request
   stringer: Stringer
+  onAuthorizePayment?: () => void
 }
 
-const TASK_LABELS: Record<string, string> = {
-  receive_racket: 'Racket Received',
-  remove_strings: 'Strings Removed',
-  mount_racket: 'Racket Mounted',
-  string_mains: 'Mains Strung',
-  string_crosses: 'Crosses Strung',
-  tie_off: 'Tied Off',
-  final_inspection: 'Final Inspection'
-}
-
-export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusProps) {
-  const [tasks, setTasks] = useState<StringingTask[]>([])
-  const [progress, setProgress] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+export function PlayerRequestStatus({ request, stringer, onAuthorizePayment }: PlayerRequestStatusProps) {
   const [isCompleting, setIsCompleting] = useState(false)
+  const [queuePosition, setQueuePosition] = useState<number | null>(null)
   const supabase = createClient()
-  const router = useRouter()
 
+  // Fetch queue position for requests waiting to be started
   useEffect(() => {
-    if (request.status !== 'pending') {
-      fetchTasks()
-      subscribeToUpdates()
-    } else {
-      setIsLoading(false)
-    }
-  }, [request.id, request.status])
-
-  const fetchTasks = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch(`/api/requests/${request.id}/tasks`)
-      const data = await response.json()
-
-      if (response.ok) {
-        // Only show required tasks to player
-        const requiredTaskTypes = [
-          'receive_racket',
-          'remove_strings',
-          'mount_racket',
-          'string_mains',
-          'string_crosses',
-          'tie_off',
-          'final_inspection'
-        ]
-        const requiredTasks = data.tasks?.filter((t: StringingTask) =>
-          requiredTaskTypes.includes(t.task_type)
-        ) || []
-
-        setTasks(requiredTasks)
-        setProgress(data.progress || 0)
+    const fetchQueuePosition = async () => {
+      if (request.status === 'accepted' && request.payment_authorized_at && !request.work_started_at) {
+        try {
+          const response = await fetch(`/api/requests/${request.id}/queue-position`)
+          const data = await response.json()
+          if (response.ok && data.queue_position) {
+            setQueuePosition(data.queue_position)
+          }
+        } catch (error) {
+          console.error('Error fetching queue position:', error)
+        }
       }
-    } catch (error) {
-      console.error('Error fetching tasks:', error)
-    } finally {
-      setIsLoading(false)
     }
-  }
+    fetchQueuePosition()
+  }, [request.id, request.status, request.payment_authorized_at, request.work_started_at])
 
-  const subscribeToUpdates = () => {
+  // Subscribe to request updates
+  useEffect(() => {
     const channel = supabase
       .channel(`request-updates:${request.id}`)
       .on('postgres_changes', {
@@ -110,20 +68,12 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
       }, () => {
         window.location.reload() // Refresh to get updated request
       })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'stringing_tasks',
-        filter: `request_id=eq.${request.id}`
-      }, () => {
-        fetchTasks()
-      })
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }
+  }, [request.id, supabase])
 
   const completeRequest = async () => {
     if (!confirm('Confirm you have picked up your racket?')) return
@@ -197,7 +147,7 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
           {/* Stringer Info */}
           <div className="flex items-center gap-4 mb-6">
             <img
-              src={stringer.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=stringer'}
+              src={stringer.avatar_url || '/default-avatar.png'}
               alt={stringer.full_name}
               className="w-14 h-14 rounded-full object-cover border-2 border-amber-300"
             />
@@ -215,7 +165,7 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
             </div>
             {request.estimated_completion && (
               <p className="text-xs text-gray-600">
-                Estimated completion: {new Date(request.estimated_completion).toLocaleString()}
+                Estimated Completion: {new Date(request.estimated_completion).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
               </p>
             )}
           </div>
@@ -224,7 +174,7 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm font-medium text-blue-900 mb-1">💳 Secure Escrow Payment</p>
             <p className="text-xs text-blue-700">
-              Your payment will be held securely and only released to the stringer after you confirm the completed work. You're protected by Stripe.
+              Your payment will be held securely and only released to the stringer when they complete your racket. You're protected by Stripe.
             </p>
           </div>
 
@@ -232,10 +182,10 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
           <div className="space-y-3">
             <Button
               className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-              onClick={() => router.push(`/request/${request.id}`)}
+              onClick={onAuthorizePayment}
             >
-              <Check className="w-4 h-4 mr-2" />
-              View Quote & Authorize Payment
+              <DollarSign className="w-4 h-4 mr-2" />
+              Authorize Payment
             </Button>
             <Link href={`/messages?conversation=${stringer.id}`} className="block">
               <Button variant="outline" className="w-full">
@@ -249,29 +199,70 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
     )
   }
 
-  // Accepted state with payment authorized - work not started yet
+  // Accepted state with payment authorized - work not started yet (in queue)
   if (request.status === 'accepted' && request.payment_authorized_at && !request.work_started_at) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="text-white">
+              <h2 className="text-lg font-bold">Payment Authorized</h2>
+              <p className="text-green-100 text-sm">Waiting in queue</p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Payment Authorized!
-          </h3>
-          <p className="text-gray-600 mb-2">
-            {stringer.full_name} will begin working on your racket soon.
-          </p>
-          {request.estimated_completion && (
-            <p className="text-sm text-gray-500 mb-4">
-              Estimated completion: {new Date(request.estimated_completion).toLocaleString()}
+        </div>
+
+        <div className="p-6">
+          {/* Queue Position */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-3">
+              <span className="text-3xl font-bold text-blue-600">
+                #{queuePosition || '?'}
+              </span>
+            </div>
+            <p className="text-lg font-semibold text-gray-900">
+              {queuePosition === 1 ? "You're next!" : `Position ${queuePosition || '...'} in queue`}
             </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {stringer.full_name} will start your racket when they're ready
+            </p>
+          </div>
+
+          {/* Stringer Info */}
+          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg mb-4">
+            <img
+              src={stringer.avatar_url || '/default-avatar.png'}
+              alt={stringer.full_name}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+            <div>
+              <p className="font-medium text-gray-900">{stringer.full_name}</p>
+              <p className="text-sm text-gray-500">Your Stringer</p>
+            </div>
+          </div>
+
+          {request.estimated_completion && (
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <Clock className="w-4 h-4" />
+              <span>Estimated ready: {new Date(request.estimated_completion).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+            </div>
           )}
+
+          {/* Info Box */}
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+            <p className="text-sm text-blue-800">
+              💳 Your payment is securely held. You'll be notified when {stringer.full_name} starts working on your racket.
+            </p>
+          </div>
+
           <Link href={`/messages?conversation=${stringer.id}`}>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" className="w-full">
               <MessageSquare className="w-4 h-4 mr-2" />
-              Message Stringer
+              Message {stringer.full_name}
             </Button>
           </Link>
         </div>
@@ -279,87 +270,59 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
     )
   }
 
-  // In Progress - show live progress
-  if (request.status === 'in_progress' || request.status === 'accepted') {
+  // In Progress - simple status (no step-by-step tasks)
+  if (request.status === 'in_progress') {
     return (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Stringing in Progress</h2>
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-              In Progress
-            </span>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-700">Progress</span>
-              <span className="text-sm font-medium text-gray-900">{progress}%</span>
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
+            <div className="text-white">
+              <h2 className="text-lg font-bold">Being Strung</h2>
+              <p className="text-blue-100 text-sm">Your racket is in progress</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {/* Stringer Info */}
+          <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg mb-6">
+            <img
+              src={stringer.avatar_url || '/default-avatar.png'}
+              alt={stringer.full_name}
+              className="w-14 h-14 rounded-full object-cover border-2 border-blue-300"
+            />
+            <div>
+              <p className="font-semibold text-gray-900">{stringer.full_name}</p>
+              <p className="text-sm text-blue-600">Currently working on your racket</p>
             </div>
           </div>
 
           {request.estimated_completion && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-6 p-3 bg-gray-50 rounded-lg">
               <Clock className="w-4 h-4" />
               <span>
-                Estimated completion: {new Date(request.estimated_completion).toLocaleString()}
+                Estimated ready: {new Date(request.estimated_completion).toLocaleString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                })}
               </span>
             </div>
           )}
-        </div>
 
-        {/* Task List */}
-        {isLoading ? (
-          <div className="p-8 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          {/* Info */}
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+            <p className="text-sm text-blue-800">
+              🎾 {stringer.full_name} is stringing your racket. You'll be notified when it's ready for pickup!
+            </p>
           </div>
-        ) : (
-          <div className="divide-y">
-            {tasks.map((task) => (
-              <div key={task.id} className="p-4">
-                <div className="flex items-center gap-3">
-                  <div>
-                    {task.status === 'completed' ? (
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    ) : task.status === 'in_progress' ? (
-                      <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                        <Loader2 className="w-4 h-4 text-white animate-spin" />
-                      </div>
-                    ) : (
-                      <div className="w-6 h-6 border-2 border-gray-300 rounded-full" />
-                    )}
-                  </div>
 
-                  <div className="flex-1">
-                    <h3 className={`font-medium ${
-                      task.status === 'completed' ? 'text-gray-500' : 'text-gray-900'
-                    }`}>
-                      {TASK_LABELS[task.task_type] || task.task_type}
-                    </h3>
-                    {task.completed_at && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Completed {new Date(task.completed_at).toLocaleTimeString()}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="p-6 border-t bg-gray-50">
           <Link href={`/messages?conversation=${stringer.id}`}>
             <Button variant="outline" className="w-full">
               <MessageSquare className="w-4 h-4 mr-2" />
@@ -374,11 +337,24 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
   // Ready for Pickup
   if (request.status === 'ready_for_pickup') {
     return (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <Package className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="text-white">
+              <h2 className="text-lg font-bold">Ready for Pickup!</h2>
+              <p className="text-green-100 text-sm">Your racket is done</p>
+            </div>
+          </div>
+        </div>
+
         <div className="p-6">
           <div className="text-center py-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-green-600" />
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-10 h-10 text-green-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
               Your Racket is Ready!
@@ -393,7 +369,8 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
                 <img
                   src={request.completion_photo_url}
                   alt="Completed racket"
-                  className="w-full max-w-md mx-auto rounded-lg border shadow-sm"
+                  className="w-full max-w-md mx-auto rounded-lg border shadow-sm cursor-pointer"
+                  onClick={() => window.open(request.completion_photo_url!, '_blank')}
                 />
               </div>
             )}
@@ -409,7 +386,7 @@ export function PlayerRequestStatus({ request, stringer }: PlayerRequestStatusPr
             <Button
               onClick={completeRequest}
               disabled={isCompleting}
-              className="w-full"
+              className="w-full bg-green-600 hover:bg-green-700"
             >
               {isCompleting ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

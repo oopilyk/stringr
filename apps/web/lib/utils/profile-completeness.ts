@@ -27,7 +27,8 @@ export function calculateProfileCompleteness(data: StringerOnboardingData): numb
   if (data.base_price_cents > 0) score += 5
   if (data.turnaround_hours > 0) score += 5
   if (data.accepts_rush !== undefined) score += 5
-  if (data.rush_fee_cents !== undefined) score += 5
+  // Only require rush_fee if accepts_rush is true, otherwise give points automatically
+  if (data.accepts_rush === false || (data.accepts_rush && data.rush_fee_cents !== undefined)) score += 5
 
   // Step 5: Inventory (15%)
   if (data.string_inventory && data.string_inventory.length > 0) score += 15

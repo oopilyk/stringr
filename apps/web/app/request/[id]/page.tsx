@@ -9,6 +9,7 @@ import { ChevronLeft, Calendar, Clock, MapPin, MessageSquare, CheckCircle, XCirc
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/use-auth'
 import Link from 'next/link'
+import Image from 'next/image'
 import { StringingProgressPanel } from '@/components/requests/stringing-progress-panel'
 import { PlayerRequestStatus } from '@/components/requests/player-request-status'
 import { AcceptJobModal } from '@/components/requests/accept-job-modal'
@@ -44,6 +45,7 @@ interface Request {
   } | null
   special_instructions?: string | null
   preferred_completion_date?: string | null
+  is_rush?: boolean
   estimated_price_cents: number
   final_price_cents?: number | null
   tip_cents?: number
@@ -221,12 +223,23 @@ export default function RequestDetailsPage() {
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
               {/* Player Avatar */}
-              <Link href={`/stringer/${request.player_id}`}>
-                <img
-                  src={request.player?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
-                  alt={request.player?.full_name || 'Player'}
-                  className="w-20 h-20 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-                />
+              <Link href={`/stringer/${request.player_id}`} className="block w-20 h-20 relative flex-shrink-0">
+                {request.player?.avatar_url ? (
+                  <img
+                    src={request.player.avatar_url}
+                    alt={request.player?.full_name || 'Player'}
+                    className="w-20 h-20 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                  />
+                ) : (
+                  <Image
+                    src="/default-avatar.png"
+                    alt={request.player?.full_name || 'Player'}
+                    width={80}
+                    height={80}
+                    className="rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                    priority
+                  />
+                )}
               </Link>
 
               <div>
@@ -309,11 +322,13 @@ export default function RequestDetailsPage() {
             ) : (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Racket Photo</h2>
-                <img
-                  src={request.racket_photo_url}
-                  alt="Racket"
-                  className="w-full h-96 object-cover rounded-lg"
-                />
+                <div className="flex justify-center bg-gray-50 rounded-lg p-4">
+                  <img
+                    src={request.racket_photo_url}
+                    alt="Racket"
+                    className="max-h-[500px] w-auto object-contain rounded-lg"
+                  />
+                </div>
               </div>
             )}
 
@@ -356,13 +371,6 @@ export default function RequestDetailsPage() {
               </div>
             </div>
 
-            {/* Special Instructions */}
-            {request.special_instructions && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Special Instructions</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">{request.special_instructions}</p>
-              </div>
-            )}
           </div>
 
           {/* Sidebar */}
@@ -425,36 +433,6 @@ export default function RequestDetailsPage() {
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Payment Authorization Needed - Show for players when quote is sent but payment not authorized */}
-            {isPlayer && request.status === ('accepted' as RequestStatus) && request.final_price_cents && !request.payment_intent_id && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 border-2 border-blue-300">
-                <div className="flex items-center space-x-2 mb-3">
-                  <DollarSign className="w-6 h-6 text-blue-600" />
-                  <h2 className="text-lg font-bold text-gray-900">Payment Authorization Required</h2>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-sm text-gray-700 mb-2">
-                    {request.stringer?.full_name} has accepted your request with a quote of:
-                  </p>
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
-                    {formatPrice(request.final_price_cents)}
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    Your payment will be held securely until you approve the completed work.
-                  </p>
-                </div>
-
-                <Button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Authorize Payment
-                </Button>
               </div>
             )}
 
@@ -554,6 +532,14 @@ export default function RequestDetailsPage() {
                     Message Player
                   </Button>
                 </div>
+
+                {/* Special Instructions in Actions card */}
+                {request.special_instructions && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Special Instructions</h3>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{request.special_instructions}</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -567,6 +553,7 @@ export default function RequestDetailsPage() {
               <PlayerRequestStatus
                 request={request}
                 stringer={{ id: request.stringer_id, full_name: request.stringer.full_name, avatar_url: request.stringer.avatar_url || null }}
+                onAuthorizePayment={() => setShowPaymentModal(true)}
               />
             )}
 
@@ -602,7 +589,9 @@ export default function RequestDetailsPage() {
             string_selection: request.string_selection,
             tension_mains_lbs: request.tension_mains_lbs,
             tension_crosses_lbs: request.tension_crosses_lbs,
-            estimated_price_cents: request.estimated_price_cents
+            estimated_price_cents: request.estimated_price_cents,
+            is_rush: request.is_rush,
+            preferred_completion_date: request.preferred_completion_date || undefined
           }}
           onAccept={handleAccept}
           onCancel={() => setShowAcceptModal(false)}

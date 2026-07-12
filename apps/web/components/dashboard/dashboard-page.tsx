@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ActiveJobCard } from '@/components/requests/active-job-card'
 import { PlayerActiveRequestCard } from '@/components/requests/player-active-request-card'
+import { SortableQueue } from '@/components/dashboard/sortable-queue'
 
 export function DashboardPage() {
   const { profile, user } = useAuth()
@@ -189,9 +190,56 @@ export function DashboardPage() {
   const completedRequests = requests.filter(r => r.status === 'completed')
 
   const pendingStringerRequests = stringerRequests.filter(r => r.status === 'pending')
-  const activeStringerRequests = stringerRequests.filter(r =>
-    ['accepted', 'in_progress', 'ready_for_pickup'].includes(r.status)
-  )
+
+  // Ready to start: payment authorized but work not started yet
+  // Sort: By queue_priority (stringer's manual order) first, then rush, then by payment_authorized_at
+  const readyToStartRequests = stringerRequests
+    .filter(r => r.status === 'accepted' && r.payment_authorized_at && !r.work_started_at)
+    .sort((a, b) => {
+      // First: respect stringer's manual queue order (queue_priority)
+      const aPriority = a.queue_priority ?? 999999
+      const bPriority = b.queue_priority ?? 999999
+      if (aPriority !== bPriority) return aPriority - bPriority
+      // If no manual order set, rush orders come first
+      if (a.is_rush && !b.is_rush) return -1
+      if (!a.is_rush && b.is_rush) return 1
+      // Finally by payment_authorized_at (oldest first)
+      const aDate = a.payment_authorized_at ? new Date(a.payment_authorized_at).getTime() : 0
+      const bDate = b.payment_authorized_at ? new Date(b.payment_authorized_at).getTime() : 0
+      return aDate - bDate
+    })
+
+  // Function to handle starting work on a request
+  const handleStartWork = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/requests/${requestId}/start-work`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ['stringer-requests'] })
+        window.location.reload()
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to start work')
+      }
+    } catch (error) {
+      alert('Failed to start work')
+    }
+  }
+
+  // Active requests: work has started (in_progress or ready_for_pickup)
+  const activeStringerRequests = stringerRequests
+    .filter(r => ['in_progress', 'ready_for_pickup'].includes(r.status) || (r.status === 'accepted' && r.work_started_at))
+    .sort((a, b) => {
+      // Rush orders come first
+      if (a.is_rush && !b.is_rush) return -1
+      if (!a.is_rush && b.is_rush) return 1
+      // Then sort by work_started_at (FIFO - oldest first)
+      const aDate = a.work_started_at ? new Date(a.work_started_at).getTime() : 0
+      const bDate = b.work_started_at ? new Date(b.work_started_at).getTime() : 0
+      return aDate - bDate
+    })
+
   const completedStringerRequests = stringerRequests.filter(r => r.status === 'completed')
 
   // Calculate stringer earnings
@@ -339,13 +387,15 @@ export function DashboardPage() {
               {pendingStringerRequests.slice(0, 3).map((request: any) => (
                 <div
                   key={request.id}
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border-l-4 border-yellow-400"
+                  className={`bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border-l-4 ${
+                    request.is_rush ? 'border-amber-500 bg-amber-50/30' : 'border-yellow-400'
+                  }`}
                 >
                   <div className="flex items-start space-x-4">
                     {/* Player Avatar */}
                     <Link href={`/stringer/${request.player_id}`}>
                       <img
-                        src={request.player?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                        src={request.player?.avatar_url || '/default-avatar.png'}
                         alt={request.player?.full_name || 'Player'}
                         className="w-16 h-16 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                       />
@@ -354,6 +404,11 @@ export function DashboardPage() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
                         <StatusBadge status={request.status} />
+                        {request.is_rush && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            <span className="mr-1">⚡</span> RUSH
+                          </span>
+                        )}
                         <h3 className="text-lg font-bold text-gray-900">
                           New Request from{' '}
                           <Link
@@ -427,7 +482,24 @@ export function DashboardPage() {
           </div>
         )}
 
-        {/* Active Requests */}
+        {/* Stringer: Ready to Start Queue - Payment authorized, waiting to be started */}
+        {isStringer && readyToStartRequests.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Ready to Start ({readyToStartRequests.length})
+              </h2>
+            </div>
+            <SortableQueue
+              requests={readyToStartRequests}
+              onStartWork={handleStartWork}
+              stringerId={user!.id}
+            />
+          </div>
+        )}
+
+        {/* Active Requests - Hide for stringers with no player requests */}
+        {(!isStringer || activeRequests.length > 0) && (
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             {isStringer ? 'My Requests (as Player)' : 'Active Requests'}
@@ -519,6 +591,7 @@ export function DashboardPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Recently Completed */}
         <div>

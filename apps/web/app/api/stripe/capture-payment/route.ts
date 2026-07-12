@@ -33,10 +33,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Verify request is ready for payment capture
-    if (jobRequest.status !== 'ready') {
+    // Verify request is ready for payment capture (must be ready_for_pickup or completed)
+    // Note: Payment is now auto-captured when stringer marks as ready, this is a fallback
+    if (!['ready_for_pickup', 'completed'].includes(jobRequest.status)) {
       return NextResponse.json({
-        error: 'Request must be marked as ready before payment capture'
+        error: 'Request must be ready for pickup before payment capture'
       }, { status: 400 })
     }
 

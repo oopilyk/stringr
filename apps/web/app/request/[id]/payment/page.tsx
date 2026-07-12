@@ -23,6 +23,8 @@ import Link from 'next/link'
 
 interface PaymentDetails {
   request_id: string
+  player_id: string
+  stringer_id: string
   status: string
   payment_intent_id: string | null
   payment_authorized_at: string | null
@@ -97,6 +99,8 @@ export default function PaymentDetailsPage() {
         // Combine the data
         const paymentData: PaymentDetails = {
           request_id: requestData.id,
+          player_id: requestData.player_id,
+          stringer_id: requestData.stringer_id,
           status: requestData.status,
           payment_intent_id: requestData.payment_intent_id,
           payment_authorized_at: requestData.payment_authorized_at,
@@ -156,8 +160,13 @@ export default function PaymentDetailsPage() {
     )
   }
 
-  const totalPaid = payment.final_price_cents + (payment.tip_cents || 0)
-  const isPayer = user?.id // We could add player_id check here if needed
+  // Calculate the player's total (stringer price + 5% app tax + tip)
+  const appTaxCents = Math.round(payment.final_price_cents * 0.05)
+  const playerTotalCents = payment.final_price_cents + appTaxCents + (payment.tip_cents || 0)
+
+  // Determine if current user is the player or stringer
+  const isPlayer = user?.id === payment.player_id
+  const isStringer = user?.id === payment.stringer_id
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -264,31 +273,39 @@ export default function PaymentDetailsPage() {
                     </div>
                   )}
 
+                  {/* Service Fee (5% app tax) - shown to player */}
+                  <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                    <p className="text-sm text-gray-600">Service Fee (5%)</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {formatPrice(appTaxCents)}
+                    </p>
+                  </div>
+
                   <div className="flex justify-between items-center pt-2">
                     <p className="text-lg font-bold text-gray-900">Total Paid</p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {formatPrice(totalPaid)}
+                      {formatPrice(playerTotalCents)}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Fee Breakdown (Platform Fee Info) */}
-            {payment.platform_fee_cents && (
+            {/* Stringer Earnings Breakdown - only shown to stringer */}
+            {isStringer && payment.platform_fee_cents && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Fee Breakdown</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">Your Earnings</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-600">Total Payment</p>
+                    <p className="text-sm text-gray-600">Job Price</p>
                     <p className="font-medium text-gray-900">{formatPrice(payment.final_price_cents)}</p>
                   </div>
                   <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-600">Platform Fee (12%)</p>
-                    <p className="font-medium text-gray-900">-{formatPrice(payment.platform_fee_cents)}</p>
+                    <p className="text-sm text-gray-600">Service Fee (12%)</p>
+                    <p className="font-medium text-red-600">-{formatPrice(payment.platform_fee_cents)}</p>
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                    <p className="font-semibold text-gray-900">Stringer Earnings</p>
+                    <p className="font-semibold text-gray-900">Your Earnings</p>
                     <p className="font-semibold text-green-600">
                       {formatPrice(payment.stringer_earnings_cents || 0)}
                     </p>
@@ -359,7 +376,7 @@ export default function PaymentDetailsPage() {
               <h3 className="font-semibold text-gray-900 mb-4">Service Provider</h3>
               <div className="flex items-center gap-3">
                 <img
-                  src={payment.stringer.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=stringer'}
+                  src={payment.stringer.avatar_url || '/default-avatar.png'}
                   alt={payment.stringer.full_name}
                   className="w-12 h-12 rounded-full object-cover"
                 />
@@ -369,21 +386,6 @@ export default function PaymentDetailsPage() {
                 </div>
               </div>
             </div>
-
-            {/* Transaction ID */}
-            {payment.payment_intent_id && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Transaction ID</h3>
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <p className="text-xs font-mono text-gray-700 break-all">
-                    {payment.payment_intent_id}
-                  </p>
-                </div>
-                <p className="text-xs text-gray-600 mt-2">
-                  Save this ID for your records
-                </p>
-              </div>
-            )}
 
             {/* Security Info */}
             <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">

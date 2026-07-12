@@ -250,7 +250,7 @@ export default function ReviewPage() {
             {/* Stringer Info */}
             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
               <img
-                src={request.stringer.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=stringer'}
+                src={request.stringer.avatar_url || '/default-avatar.png'}
                 alt={request.stringer.full_name}
                 className="w-16 h-16 rounded-full object-cover border-2 border-green-300"
               />

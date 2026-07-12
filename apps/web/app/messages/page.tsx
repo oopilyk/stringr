@@ -123,7 +123,7 @@ function MessagesSidebar({
       </div>
       <div className="flex-1 overflow-y-auto">
         {filteredConversations.map((c) => {
-          const avatarUrl = c.otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.otherUser?.full_name || 'User')}&background=0D8ABC&color=fff`
+          const avatarUrl = c.otherUser?.avatar_url || '/default-avatar.png'
           const isActive = activeId === c.id
 
           return (
@@ -229,7 +229,7 @@ function ChatWindow({
     )
   }
 
-  const avatarUrl = conversation.otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(conversation.otherUser?.full_name || 'User')}&background=0D8ABC&color=fff`
+  const avatarUrl = conversation.otherUser?.avatar_url || '/default-avatar.png'
 
   // Group messages by date
   const groupedMessages: { date: string; messages: Message[] }[] = []

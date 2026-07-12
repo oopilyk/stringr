@@ -65,17 +65,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Calculate payment breakdown - use final_price_cents (set when stringer accepts)
-    const quotedPrice = jobRequest.final_price_cents || 0
-    if (quotedPrice === 0) {
+    // Calculate payment breakdown - use final_price_cents (stringer's listed price)
+    const stringerPrice = jobRequest.final_price_cents || 0
+    if (stringerPrice === 0) {
       return NextResponse.json({ error: 'No price quoted for this job' }, { status: 400 })
     }
 
-    const breakdown = calculatePaymentBreakdown(quotedPrice)
+    const breakdown = calculatePaymentBreakdown(stringerPrice)
 
     // Create payment intent (authorization hold)
+    // Note: createPaymentIntent now charges playerTotalCents (stringer price + app tax)
     const paymentIntent = await createPaymentIntent(
-      quotedPrice,
+      stringerPrice,
       stringerSettings.stripe_account_id,
       requestId,
       {
@@ -104,9 +105,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount: quotedPrice,
+      stringerPrice: breakdown.stringerPriceCents,
+      playerTotal: breakdown.playerTotalCents,
       platformFee: breakdown.platformFeeCents,
       stringerEarnings: breakdown.stringerEarningsCents,
+      appTax: breakdown.playerAppTaxCents,
+      stringerFee: breakdown.stringerFeeCents,
     })
   } catch (error: any) {
     console.error('Error authorizing payment:', error)

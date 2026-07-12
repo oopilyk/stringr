@@ -89,3 +89,21 @@ export function formatStatusText(status: string): string {
       return status
   }
 }
+
+/**
+ * Format location string based on privacy settings
+ * @param city Full city string (e.g., "Baltimore, MD" or "San Francisco, CA")
+ * @param showTownOnly When true, only return the town/city name without state/region
+ * @returns Formatted location string
+ */
+export function formatLocation(city: string | undefined, showTownOnly: boolean = false): string {
+  if (!city) return ''
+
+  if (showTownOnly) {
+    // Extract just the town/city name (everything before the first comma)
+    const townOnly = city.split(',')[0].trim()
+    return townOnly
+  }
+
+  return city
+}

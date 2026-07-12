@@ -19,14 +19,16 @@ interface StringerProfileForm {
   city: string
   lat?: number
   lng?: number
-  
+
   // Settings data
   base_price_cents: number
   turnaround_hours: number
   accepts_rush: boolean
   rush_fee_cents: number
+  rush_turnaround_hours: number
   max_daily_jobs: number
   services: { name: string; price_cents: number }[]
+  show_town_only: boolean
 }
 
 export default function StringerProfilePage() {
@@ -84,7 +86,7 @@ export default function StringerProfilePage() {
       if (settingsData) {
         setSettings(settingsData)
         setIsListed(true)
-        
+
         // Populate form with existing data
         setValue('full_name', profile.full_name || '')
         setValue('bio', profile.bio || '')
@@ -96,8 +98,10 @@ export default function StringerProfilePage() {
         setValue('turnaround_hours', settingsData.turnaround_hours)
         setValue('accepts_rush', settingsData.accepts_rush)
         setValue('rush_fee_cents', settingsData.rush_fee_cents)
+        setValue('rush_turnaround_hours', settingsData.rush_turnaround_hours || 24)
         setValue('max_daily_jobs', settingsData.max_daily_jobs)
         setValue('services', settingsData.services || [])
+        setValue('show_town_only', settingsData.show_town_only || false)
       } else {
         // No settings yet, set defaults
         setValue('full_name', profile.full_name || '')
@@ -108,11 +112,13 @@ export default function StringerProfilePage() {
         setValue('turnaround_hours', 24)
         setValue('accepts_rush', true)
         setValue('rush_fee_cents', 500)
+        setValue('rush_turnaround_hours', 24)
         setValue('max_daily_jobs', 5)
         setValue('services', [
           { name: 'Standard Restring', price_cents: 2500 },
           { name: 'Premium String', price_cents: 3500 }
         ])
+        setValue('show_town_only', false)
       }
     } catch (error) {
       console.error('Error loading stringer data:', error)
@@ -216,8 +222,10 @@ export default function StringerProfilePage() {
           turnaround_hours: data.turnaround_hours,
           accepts_rush: data.accepts_rush,
           rush_fee_cents: data.rush_fee_cents,
+          rush_turnaround_hours: data.rush_turnaround_hours,
           max_daily_jobs: data.max_daily_jobs,
-          services: data.services
+          services: data.services,
+          show_town_only: data.show_town_only
         })
 
       if (settingsError) {
@@ -366,6 +374,23 @@ export default function StringerProfilePage() {
                   placeholder="e.g., Baltimore, MD"
                 />
                 {errors.city && <p className="text-red-600 text-sm">{errors.city.message}</p>}
+
+                {/* Privacy option for location display */}
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input
+                      {...register('show_town_only')}
+                      type="checkbox"
+                      className="mt-1 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Show town only</span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        When enabled, players will only see your town name (e.g., "Baltimore") instead of full location (e.g., "Baltimore, MD"). Your exact coordinates are still used for distance calculations.
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -400,20 +425,25 @@ export default function StringerProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Turnaround Time</label>
+                  <label className="block text-sm font-medium text-gray-700">Minimum Completion Time *</label>
                   <div className="mt-1 relative">
                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <select
-                      {...register('turnaround_hours', { required: 'Turnaround time is required' })}
+                      {...register('turnaround_hours', { required: 'Minimum completion time is required' })}
                       className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
                     >
                       <option value={6}>6 hours</option>
                       <option value={12}>12 hours</option>
-                      <option value={24}>24 hours</option>
-                      <option value={48}>48 hours</option>
-                      <option value={72}>72 hours</option>
+                      <option value={24}>24 hours (1 day)</option>
+                      <option value={48}>48 hours (2 days)</option>
+                      <option value={72}>72 hours (3 days)</option>
+                      <option value={96}>4 days</option>
+                      <option value={120}>5 days</option>
+                      <option value={144}>6 days</option>
+                      <option value={168}>7 days</option>
                     </select>
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">The minimum time you expect to complete an average racket. Players will see this as the earliest they can expect their racket back.</p>
                 </div>
 
                 <div>
@@ -444,22 +474,42 @@ export default function StringerProfilePage() {
               </div>
 
               {acceptsRush && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Rush Fee</label>
-                  <div className="mt-1 relative">
-                    <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                    <input
-                      {...register('rush_fee_cents', { 
-                        min: { value: 0, message: 'Cannot be negative' }
-                      })}
-                      type="number"
-                      step="100"
-                      min="0"
-                      className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                      onChange={(e) => setValue('rush_fee_cents', parseInt(e.target.value) || 0)}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Rush Fee</label>
+                    <div className="mt-1 relative">
+                      <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                      <input
+                        {...register('rush_fee_cents', {
+                          min: { value: 0, message: 'Cannot be negative' }
+                        })}
+                        type="number"
+                        step="100"
+                        min="0"
+                        className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                        onChange={(e) => setValue('rush_fee_cents', parseInt(e.target.value) || 0)}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">Additional fee for rush orders (in cents)</p>
                   </div>
-                  <p className="text-xs text-gray-500">Additional fee for rush orders</p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Rush Turnaround Time</label>
+                    <div className="mt-1 relative">
+                      <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                      <select
+                        {...register('rush_turnaround_hours')}
+                        className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                      >
+                        <option value={2}>2 hours</option>
+                        <option value={4}>4 hours</option>
+                        <option value={6}>6 hours</option>
+                        <option value={12}>12 hours</option>
+                        <option value={24}>24 hours (1 day)</option>
+                        <option value={48}>48 hours (2 days)</option>
+                      </select>
+                    </div>
+                    <p className="text-xs text-gray-500">How fast you can complete rush orders</p>
+                  </div>
                 </div>
               )}
             </CardContent>

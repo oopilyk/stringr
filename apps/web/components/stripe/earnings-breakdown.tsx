@@ -73,7 +73,7 @@ export function EarningsBreakdown({
         </div>
 
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Platform Fee (12%)</span>
+          <span className="text-gray-600">Service Fee (12%)</span>
           <span className="text-red-600">-{formatCurrency(platformFee)}</span>
         </div>
 

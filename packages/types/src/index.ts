@@ -23,6 +23,12 @@ export interface Profile {
   lat?: number;
   lng?: number;
   role?: UserRole;
+  // Stringer background fields (stored in profiles table)
+  years_experience?: number;
+  rackets_strung_count?: number;
+  certifications?: string[];
+  stringing_location?: string;
+  player_levels_served?: string[];
   created_at?: string;
   updated_at?: string;
 }
@@ -37,6 +43,12 @@ export const ProfileSchema = z.object({
   lat: z.number().optional(),
   lng: z.number().optional(),
   role: z.enum(['player', 'stringer']).optional(),
+  // Stringer background fields
+  years_experience: z.number().optional(),
+  rackets_strung_count: z.number().optional(),
+  certifications: z.array(z.string()).optional(),
+  stringing_location: z.string().optional(),
+  player_levels_served: z.array(z.string()).optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
@@ -368,6 +380,7 @@ export interface ExtendedStringerSettings extends StringerSettings {
   flexible_availability?: boolean;
   onboarding_step?: number;
   onboarding_completed_at?: string;
+  show_town_only?: boolean; // When true, only show town name instead of full location
 }
 
 export const ExtendedStringerSettingsSchema = StringerSettingsSchema.extend({
@@ -384,6 +397,7 @@ export const ExtendedStringerSettingsSchema = StringerSettingsSchema.extend({
   rush_turnaround_hours: z.number().int().min(1).optional(),
   onboarding_step: z.number().int().min(1).max(7).optional(),
   onboarding_completed_at: z.string().optional(),
+  show_town_only: z.boolean().optional(),
 });
 
 // Onboarding form data (all 7 steps combined)

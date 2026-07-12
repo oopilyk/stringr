@@ -264,30 +264,30 @@ export default function MyProfilePage() {
                 <div>
                   <dt className="text-gray-500">Years Experience</dt>
                   <dd className="font-medium text-gray-900">
-                    {settings?.years_experience ? `${settings.years_experience}+ years` : '—'}
+                    {profile?.years_experience ? `${profile.years_experience}+ years` : '—'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Rackets Strung</dt>
-                  <dd className="font-medium text-gray-900">{settings?.rackets_strung_count || '—'}</dd>
+                  <dd className="font-medium text-gray-900">{profile?.rackets_strung_count || '—'}</dd>
                 </div>
                 <div className="md:col-span-2">
                   <dt className="text-gray-500">Certifications</dt>
                   <dd className="font-medium text-gray-900">
-                    {settings?.certifications && settings.certifications.length > 0
-                      ? settings.certifications.join(', ')
+                    {profile?.certifications && profile.certifications.length > 0
+                      ? profile.certifications.join(', ')
                       : '—'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Stringing Location</dt>
-                  <dd className="font-medium text-gray-900">{settings?.stringing_location || '—'}</dd>
+                  <dd className="font-medium text-gray-900">{profile?.stringing_location || '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Player Levels Served</dt>
                   <dd className="font-medium text-gray-900">
-                    {settings?.player_levels_served && settings.player_levels_served.length > 0
-                      ? settings.player_levels_served.join(', ')
+                    {profile?.player_levels_served && profile.player_levels_served.length > 0
+                      ? profile.player_levels_served.join(', ')
                       : '—'}
                   </dd>
                 </div>
@@ -355,6 +355,14 @@ export default function MyProfilePage() {
                     {settings.accepts_rush ? `Yes (+${formatPrice(settings.rush_fee_cents || 0)})` : 'No'}
                   </dd>
                 </div>
+                {settings.accepts_rush && (
+                  <div>
+                    <dt className="text-gray-500">Rush Turnaround</dt>
+                    <dd className="font-medium text-gray-900">
+                      {settings.rush_turnaround_hours ? `${settings.rush_turnaround_hours}h` : '—'}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-gray-500">Bulk Discount</dt>
                   <dd className="font-medium text-gray-900">

@@ -46,3 +46,6 @@ supabase/functions/.vercel
 
 # Turbo
 .turbo
+
+# Claude Code (local, machine-specific permissions)
+.claude/settings.local.json
