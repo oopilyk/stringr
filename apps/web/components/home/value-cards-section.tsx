@@ -56,37 +56,39 @@ export function ValueCardsSection() {
 
           return (
             <ScrollReveal key={card.number} delayMs={index * 100}>
-              <article className="relative flex h-full min-h-[420px] flex-col justify-between overflow-hidden rounded-3xl p-8">
+              <article className="relative h-full min-h-[420px] overflow-hidden rounded-3xl">
                 {imageSrc ? (
                   <>
                     <Image
                       src={imageSrc}
                       alt=""
                       fill
-                      className="object-cover -z-20"
+                      className="object-cover"
                       sizes="(min-width: 768px) 33vw, 100vw"
                     />
                     <div
-                      className={`absolute inset-0 -z-10 bg-gradient-to-br ${card.gradientClass} opacity-70`}
+                      className={`absolute inset-0 bg-gradient-to-br ${card.gradientClass} opacity-70`}
                     />
                   </>
                 ) : (
-                  <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${card.gradientClass}`} />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${card.gradientClass}`} />
                 )}
 
-                <span className="text-xs font-semibold tracking-widest text-white/60">
-                  — {card.number}
-                </span>
+                <div className="relative z-10 flex h-full flex-col justify-between p-8">
+                  <span className="text-xs font-semibold tracking-widest text-white/60">
+                    — {card.number}
+                  </span>
 
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                    {card.category}
-                  </p>
-                  <p className="mt-3 text-6xl md:text-7xl font-extrabold tracking-tight text-white">
-                    {card.stat}
-                    <span className="text-emerald-100">{card.statSuffix}</span>
-                  </p>
-                  <p className="mt-5 text-sm leading-relaxed text-white/80">{card.description}</p>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                      {card.category}
+                    </p>
+                    <p className="mt-3 text-6xl md:text-7xl font-extrabold tracking-tight text-white">
+                      {card.stat}
+                      <span className="text-emerald-100">{card.statSuffix}</span>
+                    </p>
+                    <p className="mt-5 text-sm leading-relaxed text-white/80">{card.description}</p>
+                  </div>
                 </div>
               </article>
             </ScrollReveal>
